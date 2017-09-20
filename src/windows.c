@@ -15,6 +15,9 @@ extern void FDECL(win_X11_init, (int));
 #ifdef QT_GRAPHICS
 extern struct window_procs Qt_procs;
 #endif
+#ifdef QT5_GRAPHICS
+extern struct window_procs Qt5_procs;
+#endif
 #ifdef GEM_GRAPHICS
 #include "wingem.h"
 #endif
@@ -95,6 +98,9 @@ static struct win_choices {
 #endif
 #ifdef QT_GRAPHICS
     { &Qt_procs, 0 CHAINR(0) },
+#endif
+#ifdef QT5_GRAPHICS
+    { &Qt5_procs, 0 CHAINR(0) },
 #endif
 #ifdef GEM_GRAPHICS
     { &Gem_procs, win_Gem_init CHAINR(0) },

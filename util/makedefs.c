@@ -1653,6 +1653,9 @@ static struct win_info window_opts[] = {
 #ifdef QT_GRAPHICS
     { "Qt", "Qt" },
 #endif
+#ifdef QT5_GRAPHICS
+    { "Qt5", "Qt5" },
+#endif
 #ifdef GNOME_GRAPHICS
     { "Gnome", "Gnome" },
 #endif

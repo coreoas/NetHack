@@ -47,6 +47,7 @@
 #endif
 /* #define X11_GRAPHICS */   /* X11 interface */
 /* #define QT_GRAPHICS */    /* Qt interface */
+/* #define QT5_GRAPHICS */   /* Qt5 interface */
 /* #define GNOME_GRAPHICS */ /* Gnome interface */
 /* #define MSWIN_GRAPHICS */ /* Windows NT, CE, Graphics */
 
@@ -54,7 +55,7 @@
  * Define the default window system.  This should be one that is compiled
  * into your system (see defines above).  Known window systems are:
  *
- *      tty, X11, mac, amii, BeOS, Qt, Gem, Gnome
+ *      tty, X11, mac, amii, BeOS, Qt, Qt5, Gem, Gnome
  */
 
 /* MAC also means MAC windows */
@@ -96,6 +97,20 @@
 #define GRAPHIC_TOMBSTONE /* Use graphical tombstone (rip.ppm) */
 #ifndef DEFAULT_WINDOW_SYS
 #define DEFAULT_WINDOW_SYS "Qt"
+#endif
+#endif
+
+#ifdef QT5_GRAPHICS
+#ifndef DEFAULT_WC_TILED_MAP
+#define DEFAULT_WC_TILED_MAP /* Default to tiles if users doesn't say \
+                                wc_ascii_map */
+#endif
+#ifndef NOUSER_SOUNDS
+#define USER_SOUNDS /* Use sounds */
+#endif
+#define GRAPHIC_TOMBSTONE /* Use graphical tombstone (rip.xpm) */
+#ifndef DEFAULT_WINDOW_SYS
+#define DEFAULT_WINDOW_SYS "Qt5"
 #endif
 #endif
 

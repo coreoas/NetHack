@@ -24,6 +24,7 @@ _$*
 *.Z
 *.elc
 *.ln
+*.moc.cpp
 core
 # CVS default ignores end
 .*.swp

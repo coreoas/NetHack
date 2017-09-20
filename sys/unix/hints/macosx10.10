@@ -19,11 +19,13 @@
 
 # 1. Which window system(s) should be included in this binary?
 WANT_WIN_TTY=1
+#WANT_WIN_QT5=1
 #WANT_WIN_X11=1
 #WANT_WIN_QT=1
 
 # 1a. What is the default window system?
 WANT_DEFAULT=tty
+#WANT_DEFAULT=Qt5
 #WANT_DEFAULT=x11
 #WANT_DEFAULT=qt
 
@@ -37,6 +39,10 @@ QTDIR=/Developer/Qt
 LIBXPM= -L/opt/X11/lib -lXpm
 endif	# WANT_WIN_QT
 
+ifdef WANT_WIN_QT5
+QT5DIR=
+endif
+
 # 2. Is this a build for a binary that will be shared among different users
 #    or will it be private to you?
 #    If it is shared:
@@ -49,7 +55,7 @@ endif	# WANT_WIN_QT
 #	  NB: the group will be created locally; if your computer is centrally
 #	   administered this may not be what you (or your admin) want.
 #	   Consider a non-shared install (WANT_SHARE_INSTALL=0) instead.
-#	- 'make install' must be run as "sudo make install"    
+#	- 'make install' must be run as "sudo make install"
 #WANT_SHARE_INSTALL=1
 GAMEUID  = $(USER)
 GAMEGRP  = games
@@ -134,6 +140,16 @@ endif	# QTDIR
 else	# !WANT_WIN_QT
 LINK=$(CC)
 endif	# !WANT_WIN_QT
+
+ifdef WANT_WIN_QT5
+CFLAGS += -DQT5_GRAPHICS -DNOUSER_SOUNDS
+CXXFLAGS += -DQT5_GRAPHICS -DNOUSER_SOUNDS
+LINK = g++
+VARDATND = x11tiles rip.xpm nhsplash.xpm
+WINSRC += $(WINQT5SRC)
+WINLIB += $(WINQT5LIB)
+WINOBJ += $(WINQT5OBJ)
+endif # !WANT_WIN_QT5
 
 ifdef WANT_SHARE_INSTALL
 # if $GAMEUID is root, we install into roughly proper Mac locations, otherwise
