@@ -228,13 +228,16 @@ WINQT4OBJ = qt4bind.o qt4click.o qt4clust.o qt4delay.o qt4glyph.o qt4icon.o \
 	qt4inv.o qt4key.o qt4line.o qt4main.o qt4map.o qt4menu.o qt4msg.o \
 	qt4plsel.o qt4rip.o qt4set.o qt4stat.o qt4str.o qt4streq.o qt4svsel.o \
 	qt4win.o qt4xcmd.o qt4yndlg.o tile.o
-
 #
 # Files for a Qt5 port
 #
-WINQT5SRC = ../win/Qt5/qt5_interface.cpp ../win/Qt5/qt5_nhapplication.cpp
-WINQT5OBJ = qt5_port.moc.o qt5_interface.o qt5_nhapplication.o
-
+WINQT5SRC = ../win/Qt5/qt5_interface.cpp ../win/Qt5/qt5_nhapplication.cpp \
+	../win/Qt5/qt5_nhmainwindow.cpp ../win/Qt5/qt5_nhmapwindow.cpp \
+	../win/Qt5/qt5_nhmenuwindow.cpp ../win/Qt5/qt5_nhmessagewindow.cpp \
+	../win/Qt5/qt5_nhtextwindow.cpp
+WINQT5OBJ = qt5_port.moc.o qt5_interface.o qt5_nhapplication.o \
+	qt5_nhmainwindow.o qt5_nhmapwindow.o qt5_nhmenuwindow.o \
+	qt5_nhmessagewindow.o qt5_nhtextwindow.o
 #
 # Files for a Gnome port
 #
@@ -896,6 +899,16 @@ qt5_port.moc.o: ../include/qt5_port.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c qt5_port.moc.cpp
 qt5_nhapplication.o: ../win/Qt5/qt5_nhapplication.cpp ../include/qt5_port.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhapplication.cpp
+qt5_nhmainwindow.o: ../win/Qt5/qt5_nhmainwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmainwindow.cpp
+qt5_nhmapwindow.o: ../win/Qt5/qt5_nhmapwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmapwindow.cpp
+qt5_nhmenuwindow.o: ../win/Qt5/qt5_nhmenuwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmenuwindow.cpp
+qt5_nhmessagewindow.o: ../win/Qt5/qt5_nhmessagewindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmessagewindow.cpp
+qt5_nhtextwindow.o: ../win/Qt5/qt5_nhtextwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhtextwindow.cpp
 qt5_interface.o: ../win/Qt5/qt5_interface.cpp ../include/qt5_port.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_interface.cpp
 wc_chainin.o: ../win/chain/wc_chainin.c $(HACK_H)

@@ -5,24 +5,84 @@ extern "C" {
     #include "hack.h"
 }
 
+#define QT5_MESSAGE_WINDOW 2 << 5
+#define QT5_MAP_WINDOW 2 << 6
+#define QT5_MENU_WINDOW 2 << 7
+#define QT5_TEXT_WINDOW 2 << 8
+
 #include <QApplication>
 #include <QMainWindow>
 #include <QObject>
 #include <QWidget>
 #include <QDialog>
 #include <QPushButton>
+#include <QVector>
+#include <QDockWidget>
+
 
 class NHApplication : public QApplication
 {
-
+    Q_OBJECT
 private:
-    QMainWindow *main_window;
-    static NHApplication *instance;
+    static NHApplication *_instance;
     NHApplication(int &argc, char **argv);
 
 public:
     static void instantiate(int &argc, char **argv);
+    static NHApplication *get_instance();
 };
+
+
+class NHMessageWindow : public QDockWidget
+{
+    Q_OBJECT
+public:
+    NHMessageWindow(QWidget *parent);
+};
+
+
+class NHMapWindow : public QWidget
+{
+    Q_OBJECT
+public:
+    NHMapWindow(QWidget *parent);
+};
+
+
+class NHMenuWindow : public QDockWidget
+{
+    Q_OBJECT
+public:
+    NHMenuWindow(QWidget *parent);
+};
+
+
+class NHTextWindow : public QDockWidget
+{
+    Q_OBJECT
+public:
+    NHTextWindow(QWidget *parent);
+};
+
+class NHMainWindow : public QMainWindow
+{
+    Q_OBJECT
+private:
+    static NHMainWindow *_instance;
+
+    QVector<NHMessageWindow*> message_windows;
+    QVector<NHMapWindow*> map_windows;
+    QVector<NHMenuWindow*> menu_windows;
+    QVector<NHTextWindow*> text_windows;
+public:
+    static NHMainWindow* instance();
+    winid create_window(int type);
+    void display_window(winid wid, BOOLEAN_P blocking);
+    void destroy_window(winid wid);
+    void select_player();
+    void ask_name();
+};
+
 
 void qt5_init_nhwindows(int* argc, char** argv);
 void qt5_player_selection();

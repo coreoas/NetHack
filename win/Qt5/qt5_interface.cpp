@@ -8,22 +8,27 @@ extern "C" {
 void qt5_init_nhwindows(int* argc, char** argv)
 {
     NHApplication::instantiate(*argc, argv);
+    NHMainWindow* mw = NHMainWindow::instance();
+    mw->resize(320, 240);
+    mw->show();
     return;
 }
 
 void qt5_player_selection()
 {
-    printf("player selection");
+    NHMainWindow::instance()->select_player();
     return;
 }
 
 void qt5_askname()
 {
+    NHMainWindow::instance()->ask_name();
     return;
 }
 
 void qt5_get_nh_event()
 {
+    QCoreApplication::processEvents();
     return;
 }
 
@@ -44,8 +49,7 @@ void qt5_resume_nhwindows()
 
 winid qt5_create_nhwindow(int type)
 {
-    printf("create nhwindow");
-    return (winid) 0;
+    return NHMainWindow::instance()->create_window(type);
 }
 
 void qt5_clear_nhwindow(winid wid)
@@ -55,11 +59,13 @@ void qt5_clear_nhwindow(winid wid)
 
 void qt5_display_nhwindow(winid wid, BOOLEAN_P blocking)
 {
+    NHMainWindow::instance()->display_window(wid, blocking);
     return;
 }
 
 void qt5_destroy_nhwindow(winid wid)
 {
+    NHMainWindow::instance()->destroy_window(wid);
     return;
 }
 
@@ -140,13 +146,13 @@ void qt5_print_glyph(winid wid, XCHAR_P x, XCHAR_P y, int glyph, int bkglyph)
 
 void qt5_raw_print(const char *str)
 {
-    printf("%s", str);
+    printf("%s\n", str);
     return;
 }
 
 void qt5_raw_print_bold(const char *str)
 {
-    printf("%s", str);
+    printf("%s\n", str);
     return;
 }
 
@@ -217,11 +223,14 @@ void qt5_preference_update(const char *prefs)
 
 char* qt5_getmsghistory(BOOLEAN_P init)
 {
-    char var = '\0';
-    return &var;
+    return (char *) 0;
 }
+
 void qt5_putmsghistory(const char *str, BOOLEAN_P enable)
 {
+    if (enable) {
+        printf("%s", str);
+    }
     return;
 }
 

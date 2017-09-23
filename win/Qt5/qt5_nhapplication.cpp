@@ -1,21 +1,19 @@
 #include "qt5_port.h"
 
-NHApplication* NHApplication::instance = nullptr;
+NHApplication* NHApplication::_instance = nullptr;
 
 void NHApplication::instantiate(int &argc, char **argv)
 {
-    if (!instance) {
-        instance = new NHApplication(argc, argv);
+    if (!_instance) {
+        _instance = new NHApplication(argc, argv);
     }
+}
+
+NHApplication* NHApplication::get_instance()
+{
+    return _instance;
 }
 
 NHApplication::NHApplication(int &argc, char **argv) : QApplication(argc,argv)
 {
-    printf("loading application...");
-
-    main_window = new QMainWindow();
-    main_window->resize(320, 240);
-    main_window->show();
-
-    printf("done\n");
 }
