@@ -161,7 +161,7 @@ int qt5_nhgetch()
 
 int qt5_nh_poskey(int *x, int *y, int *mod)
 {
-    return 0;
+    return NHMainWindow::instance()->poskey(x, y, mod);
 }
 
 void qt5_nhbell()

@@ -192,3 +192,10 @@ char NHMainWindow::yn_function(const char *ques, const char *choices, int dflt)
         return dflt;
     }
 }
+
+
+int NHMainWindow::poskey(int *x, int *y, int *mod)
+{
+    // TODO implement mouse events
+    return getch();
+}

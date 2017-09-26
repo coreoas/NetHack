@@ -126,6 +126,7 @@ public:
     void ask_name();
     int getch();
     char yn_function(const char *ques, const char *choices, int dflt);
+    int poskey(int *x, int *y, int *mod);
 };
 
 
