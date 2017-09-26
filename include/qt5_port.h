@@ -27,6 +27,8 @@ extern "C" {
 #include <QPushButton>
 #include <QVector>
 #include <QDockWidget>
+#include <QTextEdit>
+#include <QTextStream>
 
 
 static const char *pet_mark_xpm[] = {
@@ -59,8 +61,13 @@ public:
 class NHMessageWindow : public QDockWidget
 {
     Q_OBJECT
+private:
+    QTextEdit *content;
 public:
     NHMessageWindow(QWidget *parent);
+    void print_line(const QString line);
+    void print_string(const QString str);
+    void print_yn(const char *ques, const char *choices, int dflt);
 };
 
 
@@ -118,6 +125,7 @@ public:
     void select_player();
     void ask_name();
     int getch();
+    char yn_function(const char *ques, const char *choices, int dflt);
 };
 
 

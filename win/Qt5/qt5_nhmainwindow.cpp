@@ -101,26 +101,34 @@ void NHMainWindow::ask_name()
 void NHMainWindow::keyPressEvent(QKeyEvent *e)
 {
     int key = e->key();
-    if (e->key() < 128) {
+    if (key < 128) {
         Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
+        if (!(modifiers & Qt::ShiftModifier)) {
+            key = tolower(key);
+        }
+
         if (modifiers == Qt::ShiftModifier) {
             // If the only modifier is Shift,
             // we have to capture the text because it depends on the user's keyboard layout
-            return keybuffer.enqueue(e->text().at(0).unicode());
+            return keybuffer.enqueue(key);
         }
         if (modifiers & Qt::ControlModifier) {
-            return keybuffer.enqueue(0x1f & e->key());
+            return keybuffer.enqueue(0x1f & key);
         }
         if (modifiers & Qt::MetaModifier) {
-        // TODO handle meta+shift modifier
 #ifndef NHSTDC
-            return keybuffer.enqueue(0x80 | e->key());
+            return keybuffer.enqueue(0x80 | key);
 #else
-            return keybuffer.enqueue(e->key() - 128);
+            return keybuffer.enqueue(key - 128);
 #endif
         }
-
-        return keybuffer.enqueue(e->key());
+        return keybuffer.enqueue(key);
+    } else if (key == Qt::Key_Escape) {
+        return keybuffer.enqueue(0x1B);
+    } else if (key == Qt::Key_Return) {
+        return keybuffer.enqueue(0x0A);
+    } else if (key == Qt::Key_Backspace) {
+        return keybuffer.enqueue(0x08);
     }
 
     return QWidget::keyPressEvent(e);
@@ -140,5 +148,47 @@ void NHMainWindow::draw_glyph(winid wid, int x, int y, int glyph)
         return map_windows[QT5_MAP_WINDOW ^ wid]->draw_glyph(x, y, glyph);
     } else {
         printf("That's not gonna work :/\n");
+    }
+}
+
+char NHMainWindow::yn_function(const char *ques, const char *choices, int dflt)
+{
+    // TODO implement counts
+    if (QT5_MESSAGE_WINDOW & WIN_MESSAGE) {
+        int response;
+        NHMessageWindow *msg_win = message_windows[QT5_MESSAGE_WINDOW ^ WIN_MESSAGE];
+        while (true) {
+            msg_win->print_yn(ques, choices, dflt);
+            response = getch();
+            if (choices == nullptr) {
+                break;
+            }
+
+            if (strchr(choices, tolower(response)) != nullptr) {
+                response = tolower(response);
+                break;
+            }
+
+            if (response == 0x1B) {
+                if (strchr(choices, 'q')) {
+                    response = 'q';
+                } else if (strchr(choices, 'n')) {
+                    response = 'n';
+                } else {
+                    response = dflt;
+                }
+                break;
+            }
+            if (response == 0x20 || response == 0x0A || response == 0x08) {
+                response = dflt;
+                break;
+            }
+            msg_win->print_line(QString(response));
+        }
+        msg_win->print_line(QString(response));
+        return response;
+    } else {
+        printf("Standard message window does not exist...\n");
+        return dflt;
     }
 }

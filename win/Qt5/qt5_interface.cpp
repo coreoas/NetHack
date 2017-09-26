@@ -60,13 +60,11 @@ void qt5_clear_nhwindow(winid wid)
 void qt5_display_nhwindow(winid wid, BOOLEAN_P blocking)
 {
     NHMainWindow::instance()->display_window(wid, blocking);
-    return;
 }
 
 void qt5_destroy_nhwindow(winid wid)
 {
     NHMainWindow::instance()->destroy_window(wid);
-    return;
 }
 
 void qt5_curs(winid wid, int x, int y)
@@ -178,7 +176,7 @@ int qt5_doprev_message()
 
 char qt5_yn_function(const char *ques, const char *choices, CHAR_P dflt)
 {
-    return 0;
+    return NHMainWindow::instance()->yn_function(ques, choices, (int) dflt);
 }
 
 void qt5_getlin(const char *ques, char *input)

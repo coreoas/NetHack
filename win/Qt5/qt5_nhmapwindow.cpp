@@ -37,6 +37,7 @@ void NHMapWindow::clear_glyph(int x, int y)
                                                     tile_size,
                                                     Qt::ContainsItemShape,
                                                     Qt::AscendingOrder);
+
     while (!old_items.isEmpty()) {
         QGraphicsItem *old_item = old_items.takeFirst();
         scene->removeItem(old_item);
