@@ -108,6 +108,7 @@
 #ifndef NOUSER_SOUNDS
 #define USER_SOUNDS /* Use sounds */
 #endif
+#define USE_XPM           /* Use XPM format for images (required) */
 #define GRAPHIC_TOMBSTONE /* Use graphical tombstone (rip.xpm) */
 #ifndef DEFAULT_WINDOW_SYS
 #define DEFAULT_WINDOW_SYS "Qt5"

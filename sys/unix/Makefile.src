@@ -237,7 +237,7 @@ WINQT5SRC = ../win/Qt5/qt5_interface.cpp ../win/Qt5/qt5_nhapplication.cpp \
 	../win/Qt5/qt5_nhtextwindow.cpp
 WINQT5OBJ = qt5_port.moc.o qt5_interface.o qt5_nhapplication.o \
 	qt5_nhmainwindow.o qt5_nhmapwindow.o qt5_nhmenuwindow.o \
-	qt5_nhmessagewindow.o qt5_nhtextwindow.o
+	qt5_nhmessagewindow.o qt5_nhtextwindow.o tile.o
 #
 # Files for a Gnome port
 #

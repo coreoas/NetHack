@@ -96,3 +96,49 @@ void NHMainWindow::ask_name()
 {
     std::strcpy(plname, "corentin");
 }
+
+
+void NHMainWindow::keyPressEvent(QKeyEvent *e)
+{
+    int key = e->key();
+    if (e->key() < 128) {
+        Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
+        if (modifiers == Qt::ShiftModifier) {
+            // If the only modifier is Shift,
+            // we have to capture the text because it depends on the user's keyboard layout
+            return keybuffer.enqueue(e->text().at(0).unicode());
+        }
+        if (modifiers & Qt::ControlModifier) {
+            return keybuffer.enqueue(0x1f & e->key());
+        }
+        if (modifiers & Qt::MetaModifier) {
+        // TODO handle meta+shift modifier
+#ifndef NHSTDC
+            return keybuffer.enqueue(0x80 | e->key());
+#else
+            return keybuffer.enqueue(e->key() - 128);
+#endif
+        }
+
+        return keybuffer.enqueue(e->key());
+    }
+
+    return QWidget::keyPressEvent(e);
+}
+
+int NHMainWindow::getch()
+{
+    while (keybuffer.isEmpty()) {
+        QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+    return keybuffer.dequeue();
+}
+
+void NHMainWindow::draw_glyph(winid wid, int x, int y, int glyph)
+{
+    if (QT5_MAP_WINDOW & wid) {
+        return map_windows[QT5_MAP_WINDOW ^ wid]->draw_glyph(x, y, glyph);
+    } else {
+        printf("That's not gonna work :/\n");
+    }
+}

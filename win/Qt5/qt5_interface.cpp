@@ -28,7 +28,7 @@ void qt5_askname()
 
 void qt5_get_nh_event()
 {
-    QCoreApplication::processEvents();
+    // noop
     return;
 }
 
@@ -141,7 +141,7 @@ void qt5_update_positionbar(char *features)
 
 void qt5_print_glyph(winid wid, XCHAR_P x, XCHAR_P y, int glyph, int bkglyph)
 {
-    return;
+    return NHMainWindow::instance()->draw_glyph(wid, (int) x, (int) y, glyph);
 }
 
 void qt5_raw_print(const char *str)
@@ -158,7 +158,7 @@ void qt5_raw_print_bold(const char *str)
 
 int qt5_nhgetch()
 {
-    return 0;
+    return NHMainWindow::instance()->getch();
 }
 
 int qt5_nh_poskey(int *x, int *y, int *mod)

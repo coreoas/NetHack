@@ -2,7 +2,11 @@
 #define qt5_win_h
 
 extern "C" {
-    #include "hack.h"
+
+#include "hack.h"
+#undef min
+#undef max
+
 }
 
 #define QT5_MESSAGE_WINDOW 2 << 5
@@ -13,12 +17,31 @@ extern "C" {
 #include <QApplication>
 #include <QMainWindow>
 #include <QObject>
+#include <QQueue>
+#include <QKeyEvent>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QPixmap>
 #include <QWidget>
 #include <QDialog>
 #include <QPushButton>
 #include <QVector>
 #include <QDockWidget>
 
+
+static const char *pet_mark_xpm[] = {
+/* width height ncolors chars_per_pixel */
+"5 5 2 1",
+/* colors */
+". c None",
+"  c #FF0000",
+/* pixels */
+". . .",
+"     ",
+"     ",
+".   .",
+".. ..",
+};
 
 class NHApplication : public QApplication
 {
@@ -41,11 +64,18 @@ public:
 };
 
 
-class NHMapWindow : public QWidget
+class NHMapWindow : public QGraphicsView
 {
     Q_OBJECT
+private:
+    QGraphicsScene *scene;
+    QPixmap tiles[MAX_GLYPH];
+    QPixmap *pet_mark;
+    int tile_size;
+    void clear_glyph(int x, int y);
 public:
     NHMapWindow(QWidget *parent);
+    void draw_glyph(int x, int y, int glyph);
 };
 
 
@@ -70,17 +100,24 @@ class NHMainWindow : public QMainWindow
 private:
     static NHMainWindow *_instance;
 
+    QQueue<int> keybuffer;
     QVector<NHMessageWindow*> message_windows;
     QVector<NHMapWindow*> map_windows;
     QVector<NHMenuWindow*> menu_windows;
     QVector<NHTextWindow*> text_windows;
+
+    void keyPressEvent(QKeyEvent *e);
+
 public:
     static NHMainWindow* instance();
+
     winid create_window(int type);
     void display_window(winid wid, BOOLEAN_P blocking);
     void destroy_window(winid wid);
+    void draw_glyph(winid wid, int x, int y, int glyph);
     void select_player();
     void ask_name();
+    int getch();
 };
 
 
