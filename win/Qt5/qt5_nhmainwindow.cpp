@@ -100,35 +100,26 @@ void NHMainWindow::ask_name()
 
 void NHMainWindow::keyPressEvent(QKeyEvent *e)
 {
+    QString typed_str = e->text();
     int key = e->key();
-    if (key < 128) {
+    if (typed_str.length() == 1) {
+        return keybuffer.enqueue(typed_str.at(0).unicode());
+    } else if (typed_str.length() == 0 && key < 128) {
         Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
-        if (!(modifiers & Qt::ShiftModifier)) {
-            key = tolower(key);
-        }
-
-        if (modifiers == Qt::ShiftModifier) {
-            // If the only modifier is Shift,
-            // we have to capture the text because it depends on the user's keyboard layout
-            return keybuffer.enqueue(key);
-        }
         if (modifiers & Qt::ControlModifier) {
             return keybuffer.enqueue(0x1f & key);
         }
-        if (modifiers & Qt::MetaModifier) {
+         if (modifiers & Qt::MetaModifier) {
+            if (key >= 0x41 && key <= 0x5A && !(modifiers & Qt::ShiftModifier)) {
+                // manage meta with or without shift for [A-Z]
+                key ^= 0x20;
+            }
 #ifndef NHSTDC
             return keybuffer.enqueue(0x80 | key);
 #else
             return keybuffer.enqueue(key - 128);
 #endif
-        }
-        return keybuffer.enqueue(key);
-    } else if (key == Qt::Key_Escape) {
-        return keybuffer.enqueue(0x1B);
-    } else if (key == Qt::Key_Return) {
-        return keybuffer.enqueue(0x0A);
-    } else if (key == Qt::Key_Backspace) {
-        return keybuffer.enqueue(0x08);
+         }
     }
 
     return QWidget::keyPressEvent(e);
@@ -179,7 +170,7 @@ char NHMainWindow::yn_function(const char *ques, const char *choices, int dflt)
                 }
                 break;
             }
-            if (response == 0x20 || response == 0x0A || response == 0x08) {
+            if (response == 0x20 || response == 0x0D || response == 0x08) {
                 response = dflt;
                 break;
             }
