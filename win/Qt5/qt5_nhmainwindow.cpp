@@ -1,5 +1,10 @@
 #include "qt5_port.h"
 
+extern "C" {
+#include "func_tab.h"
+}
+
+
 NHMainWindow* NHMainWindow::_instance = nullptr;
 
 NHMainWindow* NHMainWindow::instance()
@@ -170,7 +175,7 @@ char NHMainWindow::yn_function(const char *ques, const char *choices, int dflt)
                 }
                 break;
             }
-            if (response == 0x20 || response == 0x0D || response == 0x08) {
+            if (response == 0x20 || response == 0x0D || response == 0x7F) {
                 response = dflt;
                 break;
             }
@@ -179,7 +184,6 @@ char NHMainWindow::yn_function(const char *ques, const char *choices, int dflt)
         msg_win->print_line(QString(response));
         return response;
     } else {
-        printf("Standard message window does not exist...\n");
         return dflt;
     }
 }
@@ -189,4 +193,76 @@ int NHMainWindow::poskey(int *x, int *y, int *mod)
 {
     // TODO implement mouse events
     return getch();
+}
+
+int NHMainWindow::get_ext_cmd()
+{
+    if (QT5_MESSAGE_WINDOW & WIN_MESSAGE) {
+        QVector<QString> cmds;
+        struct ext_func_tab *efp;
+        for (efp = extcmdlist; efp->ef_txt; efp++) {
+            if ((!wizard && (efp->flags & WIZMODECMD)) || !(efp->flags & AUTOCOMPLETE)) {
+                // to preserve indices
+                cmds.append("");
+                continue;
+            }
+            cmds.append(efp->ef_txt);
+        }
+
+        NHMessageWindow *msg_win = message_windows[QT5_MESSAGE_WINDOW ^ WIN_MESSAGE];
+        msg_win->set_bold();
+        msg_win->print_string("#");
+        QString typed_chars, autocomplete_chars;
+        QVector<int> possible_cmds;
+        QString selected_cmd;
+
+        while(true) {
+            int new_char = getch();
+            if (new_char == 0x1B) {
+                msg_win->print_string("\n");
+                msg_win->unset_bold();
+                return -1;
+            }
+            if (new_char == 0x0D) {
+                msg_win->print_string("\n");
+                msg_win->unset_bold();
+                int i;
+                for (i = 0; i < cmds.size(); i++) {
+                    if (cmds.at(i) == typed_chars + autocomplete_chars) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+            if (new_char != 0x7F) {
+                msg_win->print_string(QString(new_char));
+                QTextStream(&typed_chars) << autocomplete_chars << (char) new_char;
+
+                autocomplete_chars.clear();
+
+                // autocomplete if we match only one command
+                int i;
+                possible_cmds.clear();
+                for (i = 0; i < cmds.size(); i++) {
+                    if (cmds.at(i).startsWith(typed_chars)) {
+                        possible_cmds.append(i);
+                    }
+                }
+                if (possible_cmds.size() == 1) {
+                    selected_cmd = cmds.at(possible_cmds.at(0));
+                    autocomplete_chars = selected_cmd.right(selected_cmd.length() - typed_chars.length());
+                    msg_win->print_string(autocomplete_chars);
+                }
+            } else {
+                if (autocomplete_chars.length()) {
+                    msg_win->remove_chars(autocomplete_chars.length());
+                    autocomplete_chars.clear();
+                } else if (typed_chars.length()) {
+                    typed_chars.chop(1);
+                    msg_win->remove_chars(1);
+                }
+            }
+        }
+    }
+    return -1;
 }

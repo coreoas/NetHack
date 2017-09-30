@@ -186,7 +186,7 @@ void qt5_getlin(const char *ques, char *input)
 
 int qt5_get_ext_cmd()
 {
-    return 0;
+    return NHMainWindow::instance()->get_ext_cmd();
 }
 
 void qt5_number_pad(int)

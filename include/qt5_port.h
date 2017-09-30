@@ -6,6 +6,7 @@ extern "C" {
 #include "hack.h"
 #undef min
 #undef max
+#undef get_ext_cmd
 
 }
 
@@ -29,6 +30,7 @@ extern "C" {
 #include <QDockWidget>
 #include <QTextEdit>
 #include <QTextStream>
+#include <QTextCharFormat>
 
 
 static const char *pet_mark_xpm[] = {
@@ -63,11 +65,15 @@ class NHMessageWindow : public QDockWidget
     Q_OBJECT
 private:
     QTextEdit *content;
+    QTextCharFormat format;
 public:
     NHMessageWindow(QWidget *parent);
     void print_line(const QString line);
     void print_string(const QString str);
+    void set_bold();
+    void unset_bold();
     void print_yn(const char *ques, const char *choices, int dflt);
+    void remove_chars(const int n);
 };
 
 
@@ -127,6 +133,7 @@ public:
     int getch();
     char yn_function(const char *ques, const char *choices, int dflt);
     int poskey(int *x, int *y, int *mod);
+    int get_ext_cmd();
 };
 
 
