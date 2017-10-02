@@ -7,13 +7,13 @@ extern "C" {
 #undef min
 #undef max
 #undef get_ext_cmd
-
 }
 
-#define QT5_MESSAGE_WINDOW 2 << 5
-#define QT5_MAP_WINDOW 2 << 6
-#define QT5_MENU_WINDOW 2 << 7
-#define QT5_TEXT_WINDOW 2 << 8
+#define QT5_MESSAGE_WINDOW 1 << 5
+#define QT5_MAP_WINDOW 1 << 6
+#define QT5_MENU_WINDOW 1 << 7
+#define QT5_TEXT_WINDOW 1 << 8
+#define QT5_STATUS_WINDOW 1 << 9
 
 #include <QApplication>
 #include <QMainWindow>
@@ -31,9 +31,10 @@ extern "C" {
 #include <QTextEdit>
 #include <QTextStream>
 #include <QTextCharFormat>
+#include <QLabel>
 
 
-static const char *pet_mark_xpm[] = {
+static const char *petmark_xpm[] = {
 /* width height ncolors chars_per_pixel */
 "5 5 2 1",
 /* colors */
@@ -83,11 +84,15 @@ class NHMapWindow : public QGraphicsView
 private:
     QGraphicsScene *scene;
     QPixmap tiles[MAX_GLYPH];
-    QPixmap *pet_mark;
+    QPixmap *petmark;
+    int max_x;
+    int max_y;
     int tile_size;
     void clear_glyph(int x, int y);
 public:
     NHMapWindow(QWidget *parent);
+    void clear();
+    void ensure_visible(int x, int y);
     void draw_glyph(int x, int y, int glyph);
 };
 
@@ -107,10 +112,55 @@ public:
     NHTextWindow(QWidget *parent);
 };
 
+class StatusWidget : public QWidget
+{
+private:
+    int value;
+    int timeout;
+    QLabel *label;
+public:
+    StatusWidget(int type, QWidget *parent);
+    void update_value(int newval);
+    void decrease_timeout();
+};
+
+class NHStatusWindow : public QDockWidget
+{
+    Q_OBJECT
+private:
+    StatusWidget *str_widget;
+    StatusWidget *intl_widget;
+    StatusWidget *wis_widget;
+    StatusWidget *dex_widget;
+    StatusWidget *con_widget;
+    StatusWidget *cha_widget;
+    QLabel *presentation_label;
+    QLabel *gold_label;
+    QLabel *hp_label;
+    QLabel *power_label;
+    QLabel *ac_label;
+    QLabel *level_label;
+    QLabel *exp_label;
+    QLabel *time_label;
+    void update_presentation();
+    void update_gold();
+    void update_hp();
+    void update_power();
+    void update_ac();
+    void update_level();
+    void update_exp();
+    void update_time();
+public:
+    NHStatusWindow(QWidget *parent);
+    void update_status();
+};
+
 class NHMainWindow : public QMainWindow
 {
     Q_OBJECT
 private:
+    NHMainWindow();
+    ~NHMainWindow();
     static NHMainWindow *_instance;
 
     QQueue<int> keybuffer;
@@ -118,6 +168,7 @@ private:
     QVector<NHMapWindow*> map_windows;
     QVector<NHMenuWindow*> menu_windows;
     QVector<NHTextWindow*> text_windows;
+    QVector<NHStatusWindow*> status_windows;
 
     void keyPressEvent(QKeyEvent *e);
 
@@ -125,6 +176,7 @@ public:
     static NHMainWindow* instance();
 
     winid create_window(int type);
+    void clear_window(winid wid);
     void display_window(winid wid, BOOLEAN_P blocking);
     void destroy_window(winid wid);
     void draw_glyph(winid wid, int x, int y, int glyph);
@@ -134,6 +186,8 @@ public:
     char yn_function(const char *ques, const char *choices, int dflt);
     int poskey(int *x, int *y, int *mod);
     int get_ext_cmd();
+    void display_str(winid wid, int attr, const char *str);
+    void ensure_visible(int x, int y);
 };
 
 

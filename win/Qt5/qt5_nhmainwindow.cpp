@@ -15,6 +15,14 @@ NHMainWindow* NHMainWindow::instance()
     return _instance;
 }
 
+NHMainWindow::NHMainWindow() : QMainWindow() {
+    iflags.window_inited = 1;
+}
+
+NHMainWindow::~NHMainWindow() {
+    iflags.window_inited = 0;
+}
+
 winid NHMainWindow::create_window(int type)
 {
     switch (type){
@@ -50,6 +58,22 @@ winid NHMainWindow::create_window(int type)
             text_windows.append(new_text_win);
             return (winid) (QT5_TEXT_WINDOW | (text_windows.size() - 1));
         }
+
+        case NHW_STATUS: {
+            NHStatusWindow *new_status_win = new NHStatusWindow(this);
+            addDockWidget(Qt::BottomDockWidgetArea, new_status_win);
+            new_status_win->hide();
+            status_windows.append(new_status_win);
+            return (winid) (QT5_STATUS_WINDOW | (status_windows.size() - 1));
+        }
+    }
+    printf("invalid window type\n");
+}
+
+void NHMainWindow::clear_window(winid wid)
+{
+    if (QT5_MAP_WINDOW & wid) {
+        map_windows[QT5_MAP_WINDOW ^ wid]->clear();
     }
 }
 
@@ -63,6 +87,8 @@ void NHMainWindow::display_window(winid wid, BOOLEAN_P blocking)
         menu_windows[QT5_MENU_WINDOW ^ wid]->show();
     } else if (QT5_TEXT_WINDOW & wid) {
         text_windows[QT5_TEXT_WINDOW ^ wid]->show();
+    } else if (QT5_STATUS_WINDOW & wid) {
+        status_windows[QT5_STATUS_WINDOW ^ wid]->show();
     }
     QCoreApplication::processEvents();
 }
@@ -70,7 +96,7 @@ void NHMainWindow::display_window(winid wid, BOOLEAN_P blocking)
 void NHMainWindow::destroy_window(winid wid)
 {
     if (QT5_MESSAGE_WINDOW & wid) {
-        removeDockWidget(message_windows[QT5_MAP_WINDOW ^ wid]);
+        removeDockWidget(message_windows[QT5_MESSAGE_WINDOW ^ wid]);
         // To keep the indexes constant
         // TODO smart index management
         delete message_windows[QT5_MESSAGE_WINDOW ^ wid];
@@ -87,6 +113,10 @@ void NHMainWindow::destroy_window(winid wid)
         removeDockWidget(text_windows[QT5_TEXT_WINDOW ^ wid]);
         delete text_windows[QT5_TEXT_WINDOW ^ wid];
         text_windows[QT5_TEXT_WINDOW ^ wid] = nullptr;
+    } else if (QT5_STATUS_WINDOW & wid) {
+        removeDockWidget(status_windows[QT5_STATUS_WINDOW ^ wid]);
+        delete status_windows[QT5_STATUS_WINDOW ^ wid];
+        status_windows[QT5_STATUS_WINDOW ^ wid] = nullptr;
     }
 
     QCoreApplication::processEvents();
@@ -99,7 +129,7 @@ void NHMainWindow::select_player()
 
 void NHMainWindow::ask_name()
 {
-    std::strcpy(plname, "corentin");
+    std::strcpy(plname, "wizard");
 }
 
 
@@ -150,7 +180,7 @@ void NHMainWindow::draw_glyph(winid wid, int x, int y, int glyph)
 char NHMainWindow::yn_function(const char *ques, const char *choices, int dflt)
 {
     // TODO implement counts
-    if (QT5_MESSAGE_WINDOW & WIN_MESSAGE) {
+    if (WIN_MESSAGE != -1) {
         int response;
         NHMessageWindow *msg_win = message_windows[QT5_MESSAGE_WINDOW ^ WIN_MESSAGE];
         while (true) {
@@ -265,4 +295,20 @@ int NHMainWindow::get_ext_cmd()
         }
     }
     return -1;
+}
+
+void NHMainWindow::display_str(winid wid, int attr, const char *str)
+{
+    if (QT5_MESSAGE_WINDOW & wid) {
+        message_windows[QT5_MESSAGE_WINDOW ^ wid]->print_line(str);
+    } else if (QT5_STATUS_WINDOW & wid) {
+        status_windows[QT5_STATUS_WINDOW ^ wid]->update_status();
+    }
+}
+
+
+void NHMainWindow::ensure_visible(int x, int y)
+{
+    if (WIN_MAP != -1)
+        map_windows[QT5_MAP_WINDOW ^ WIN_MAP]->ensure_visible(x, y);
 }

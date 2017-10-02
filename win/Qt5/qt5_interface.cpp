@@ -54,7 +54,7 @@ winid qt5_create_nhwindow(int type)
 
 void qt5_clear_nhwindow(winid wid)
 {
-    return;
+    NHMainWindow::instance()->clear_window(wid);
 }
 
 void qt5_display_nhwindow(winid wid, BOOLEAN_P blocking)
@@ -74,12 +74,7 @@ void qt5_curs(winid wid, int x, int y)
 
 void qt5_putstr(winid wid, int attr, const char *str)
 {
-    return;
-}
-
-void qt5_putmixed(winid wid, int attr, const char *str)
-{
-    return;
+    NHMainWindow::instance()->display_str(wid, attr, str);
 }
 
 void qt5_display_file(const char *str, BOOLEAN_P complain)
@@ -129,7 +124,7 @@ void qt5_wait_synch()
 
 void qt5_cliparound(int x, int y)
 {
-    return;
+    NHMainWindow::instance()->ensure_visible(x, y);
 }
 
 void qt5_update_positionbar(char *features)
@@ -279,7 +274,7 @@ struct window_procs Qt5_procs = {
     qt5_destroy_nhwindow,
     qt5_curs,
     qt5_putstr,
-    qt5_putmixed,
+    genl_putmixed,
     qt5_display_file,
     qt5_start_menu,
     qt5_add_menu,
