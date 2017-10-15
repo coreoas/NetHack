@@ -1,7 +1,5 @@
 #include "qt5_port.h"
 
-#include <QVBoxLayout>
-
 NHMessageWindow::NHMessageWindow(QWidget *parent) : QDockWidget(parent)
 {
     setFeatures(QDockWidget::NoDockWidgetFeatures);

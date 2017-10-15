@@ -2,6 +2,7 @@ extern "C" {
     #include "hack.h"
 }
 
+#include <QThread>
 #include "qt5_port.h"
 
 
@@ -84,27 +85,22 @@ void qt5_display_file(const char *str, BOOLEAN_P complain)
 
 void qt5_start_menu(winid wid)
 {
-    return;
+    NHMainWindow::instance()->init_menu(wid);
 }
 
 void qt5_add_menu(winid wid, int glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P groupacc, int attr, const char *str, BOOLEAN_P preselected)
 {
-    return;
+    NHMainWindow::instance()->add_menu_entry(wid, glyph, identifier, accelerator, groupacc, attr, str, preselected);
 }
 
 void qt5_end_menu(winid wid, const char *prompt)
 {
-    return;
+    NHMainWindow::instance()->flush_menu(wid, prompt);
 }
 
 int qt5_select_menu(winid wid, int how, MENU_ITEM_P **selected)
 {
-    return 0;
-}
-
-char qt5_message_menu(CHAR_P let, int how, const char *mesg)
-{
-    return 0;
+    return NHMainWindow::instance()->get_menu_selection(wid, how, selected);
 }
 
 void qt5_update_inventory()
@@ -114,12 +110,12 @@ void qt5_update_inventory()
 
 void qt5_mark_synch()
 {
-    return;
+    QCoreApplication::processEvents();
 }
 
 void qt5_wait_synch()
 {
-    return;
+    QCoreApplication::processEvents();
 }
 
 void qt5_cliparound(int x, int y)
@@ -191,7 +187,8 @@ void qt5_number_pad(int)
 
 void qt5_delay_output()
 {
-    return;
+    QCoreApplication::processEvents();
+    QThread::msleep(50);
 }
 
 void qt5_start_screen()
@@ -280,7 +277,7 @@ struct window_procs Qt5_procs = {
     qt5_add_menu,
     qt5_end_menu,
     qt5_select_menu,
-    qt5_message_menu,
+    genl_message_menu,
     qt5_update_inventory,
     qt5_mark_synch,
     qt5_wait_synch,

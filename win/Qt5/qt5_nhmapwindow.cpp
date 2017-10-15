@@ -4,6 +4,7 @@ extern short glyph2tile[]; // from tile.c
 }
 
 #include "qt5_port.h"
+#include "qt5_icons.h"
 
 #include <QGraphicsPixmapItem>
 #include <QBitmap>
@@ -13,8 +14,10 @@ NHMapWindow::NHMapWindow(QWidget *parent) : QGraphicsView(parent)
     scene = new QGraphicsScene(this);
     scene->setBackgroundBrush(Qt::black);
     setScene(scene);
-    setMinimumWidth(500);
+    setMinimumWidth(300);
     setMinimumHeight(400);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
     QPixmap tilemap("x11tiles", "XPM");
     petmark = new QPixmap(petmark_xpm);

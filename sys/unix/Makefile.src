@@ -162,7 +162,7 @@ GNOMEINC=-I/usr/lib/glib/include -I/usr/lib/gnome-libs/include -I../win/gnome
 # The Qt, Qt5 and Be window systems are written in C++, while the rest of
 # NetHack is standard C.  If using Qt, uncomment the LINK line here to get
 # the C++ libraries linked in.
-CXXFLAGS = -Wall -std=gnu++11
+CXXFLAGS += -Wall -g -std=gnu++11
 INCPATH = -I. -I../include \
           -I$(QTDIR)/include \
           -I$(QT5DIR)/lib/QtWidgets.framework/Headers \
@@ -234,10 +234,10 @@ WINQT4OBJ = qt4bind.o qt4click.o qt4clust.o qt4delay.o qt4glyph.o qt4icon.o \
 WINQT5SRC = ../win/Qt5/qt5_interface.cpp ../win/Qt5/qt5_nhapplication.cpp \
 	../win/Qt5/qt5_nhmainwindow.cpp ../win/Qt5/qt5_nhmapwindow.cpp \
 	../win/Qt5/qt5_nhmenuwindow.cpp ../win/Qt5/qt5_nhmessagewindow.cpp \
-	../win/Qt5/qt5_nhtextwindow.cpp
+	../win/Qt5/qt5_nhtextwindow.cpp ../win/Qt5/qt5_nhstatuswindow.cpp
 WINQT5OBJ = qt5_port.moc.o qt5_interface.o qt5_nhapplication.o \
 	qt5_nhmainwindow.o qt5_nhmapwindow.o qt5_nhmenuwindow.o \
-	qt5_nhmessagewindow.o qt5_nhtextwindow.o tile.o
+	qt5_nhmessagewindow.o qt5_nhtextwindow.o qt5_nhstatuswindow.o tile.o
 #
 # Files for a Gnome port
 #
@@ -897,19 +897,29 @@ qt4yndlg.o : ../win/Qt4/qt4yndlg.cpp $(HACK_H) qt4yndlg.moc ../win/Qt4/qt4yndlg.
 	$(CXX) $(CXXFLAGS) -c ../win/Qt4/qt4yndlg.cpp
 qt5_port.moc.o: ../include/qt5_port.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c qt5_port.moc.cpp
-qt5_nhapplication.o: ../win/Qt5/qt5_nhapplication.cpp ../include/qt5_port.h qt5_port.moc.cpp
+qt5_nhapplication.o: ../win/Qt5/qt5_nhapplication.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhapplication.cpp
-qt5_nhmainwindow.o: ../win/Qt5/qt5_nhmainwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+qt5_nhmainwindow.o: ../win/Qt5/qt5_nhmainwindow.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmainwindow.cpp
-qt5_nhmapwindow.o: ../win/Qt5/qt5_nhmapwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+qt5_nhmapwindow.o: ../win/Qt5/qt5_nhmapwindow.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmapwindow.cpp
-qt5_nhmenuwindow.o: ../win/Qt5/qt5_nhmenuwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+qt5_nhmenuwindow.o: ../win/Qt5/qt5_nhmenuwindow.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmenuwindow.cpp
-qt5_nhmessagewindow.o: ../win/Qt5/qt5_nhmessagewindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+qt5_nhmessagewindow.o: ../win/Qt5/qt5_nhmessagewindow.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhmessagewindow.cpp
-qt5_nhtextwindow.o: ../win/Qt5/qt5_nhtextwindow.cpp ../include/qt5_port.h qt5_port.moc.cpp
+qt5_nhtextwindow.o: ../win/Qt5/qt5_nhtextwindow.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhtextwindow.cpp
-qt5_interface.o: ../win/Qt5/qt5_interface.cpp ../include/qt5_port.h qt5_port.moc.cpp
+qt5_nhstatuswindow.o: ../win/Qt5/qt5_nhstatuswindow.cpp ../include/qt_xpms.h \
+	../include/qt5_icons.h ../include/qt5_port.h ../include/qt5_icons.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_nhstatuswindow.cpp
+qt5_interface.o: ../win/Qt5/qt5_interface.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) $(INCPATH) -c ../win/Qt5/qt5_interface.cpp
 wc_chainin.o: ../win/chain/wc_chainin.c $(HACK_H)
 	$(CC) $(CFLAGS) -c ../win/chain/wc_chainin.c

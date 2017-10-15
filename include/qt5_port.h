@@ -1,5 +1,5 @@
-#ifndef qt5_win_h
-#define qt5_win_h
+#ifndef qt5_port_h
+#define qt5_port_h
 
 extern "C" {
 
@@ -14,6 +14,9 @@ extern "C" {
 #define QT5_MENU_WINDOW 1 << 7
 #define QT5_TEXT_WINDOW 1 << 8
 #define QT5_STATUS_WINDOW 1 << 9
+
+#define QT5_TEXT_ONLY_MENU 1
+#define QT5_REGULAR_MENU 2
 
 #include <QApplication>
 #include <QMainWindow>
@@ -32,21 +35,8 @@ extern "C" {
 #include <QTextStream>
 #include <QTextCharFormat>
 #include <QLabel>
+#include <QVBoxLayout>
 
-
-static const char *petmark_xpm[] = {
-/* width height ncolors chars_per_pixel */
-"5 5 2 1",
-/* colors */
-". c None",
-"  c #FF0000",
-/* pixels */
-". . .",
-"     ",
-"     ",
-".   .",
-".. ..",
-};
 
 class NHApplication : public QApplication
 {
@@ -97,11 +87,56 @@ public:
 };
 
 
-class NHMenuWindow : public QDockWidget
+class NHMenuLine : public QWidget {
+    Q_OBJECT
+
+private:
+    CHAR_P accelerator;
+    const ANY_P *identifier;
+    BOOLEAN_P selected;
+
+    QLabel *selection_label;
+    QLabel *glyph_label;
+    QLabel *accelerator_label;
+    QLabel *description_label;
+
+// public slots:
+//     void toggle_select();
+
+public:
+    NHMenuLine(int glyph, const ANY_P *identifier, CHAR_P accelerator, int attr, const char *str, BOOLEAN_P preselected, QWidget *parent);
+    int matchesKeyPress(QString typed_str);
+    void toggleSelection();
+    BOOLEAN_P is_selected();
+    MENU_ITEM_P get_menu_item();
+};
+
+class NHMenuWindow : public QDialog
 {
     Q_OBJECT
+    int type;
+    QVector<NHMenuLine*> lines;
+    QVBoxLayout *content_layout;
+    QVBoxLayout *main_layout;
+    QHBoxLayout *button_layout;
+    QPushButton *accept_button;
+    QPushButton *reject_button;
+    int cursor_index;
+
+    int how;
+    int selection_count;
+    MENU_ITEM_P **selection;
+
 public:
     NHMenuWindow(QWidget *parent);
+    void done(int r);
+    void start();
+    void add(int glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P groupacc, int attr, const char *str, BOOLEAN_P preselected);
+    void setup_menu_selection(int how, MENU_ITEM_P **selection);
+    int get_selection_count();
+    void set_menu_prompt(const char *prompt);
+    void print_line(int attr, const char *str);
+    void keyPressEvent(QKeyEvent *e);
 };
 
 
@@ -175,19 +210,32 @@ private:
 public:
     static NHMainWindow* instance();
 
+    // window management methods
     winid create_window(int type);
     void clear_window(winid wid);
     void display_window(winid wid, BOOLEAN_P blocking);
     void destroy_window(winid wid);
+
+    // WIN_MAP display methods
+    void ensure_visible(int x, int y);
     void draw_glyph(winid wid, int x, int y, int glyph);
+
+    // menu methods
+    void init_menu(winid wid);
+    void add_menu_entry(winid wid, int glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P groupacc, int attr, const char *str, BOOLEAN_P preselected);
+    void flush_menu(winid wid, const char *prompt);
+    int get_menu_selection(winid wid, int how, MENU_ITEM_P **selection);
+
+    // player methods
     void select_player();
     void ask_name();
+
+    // general gameplay-related methods
     int getch();
     char yn_function(const char *ques, const char *choices, int dflt);
     int poskey(int *x, int *y, int *mod);
     int get_ext_cmd();
     void display_str(winid wid, int attr, const char *str);
-    void ensure_visible(int x, int y);
 };
 
 

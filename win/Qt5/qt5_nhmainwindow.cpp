@@ -44,8 +44,6 @@ winid NHMainWindow::create_window(int type)
 
         case NHW_MENU: {
             NHMenuWindow *new_menu_win = new NHMenuWindow(this);
-            addDockWidget(Qt::LeftDockWidgetArea, new_menu_win);
-            new_menu_win->hide();
             menu_windows.append(new_menu_win);
             return (winid) (QT5_MENU_WINDOW | (menu_windows.size() - 1));
         }
@@ -68,6 +66,7 @@ winid NHMainWindow::create_window(int type)
         }
     }
     printf("invalid window type\n");
+    return -1;
 }
 
 void NHMainWindow::clear_window(winid wid)
@@ -80,11 +79,12 @@ void NHMainWindow::clear_window(winid wid)
 void NHMainWindow::display_window(winid wid, BOOLEAN_P blocking)
 {
     if (QT5_MESSAGE_WINDOW & wid) {
+        // TODO handle blocking for message windows, with "--more--"
         message_windows[QT5_MESSAGE_WINDOW ^ wid]->show();
     } else if (QT5_MAP_WINDOW & wid) {
         map_windows[QT5_MAP_WINDOW ^ wid]->show();
     } else if (QT5_MENU_WINDOW & wid) {
-        menu_windows[QT5_MENU_WINDOW ^ wid]->show();
+        menu_windows[QT5_MENU_WINDOW ^ wid]->exec();
     } else if (QT5_TEXT_WINDOW & wid) {
         text_windows[QT5_TEXT_WINDOW ^ wid]->show();
     } else if (QT5_STATUS_WINDOW & wid) {
@@ -106,7 +106,6 @@ void NHMainWindow::destroy_window(winid wid)
         delete map_windows[QT5_MAP_WINDOW ^ wid];
         map_windows[QT5_MAP_WINDOW ^ wid] = nullptr;
     } else if (QT5_MENU_WINDOW & wid) {
-        removeDockWidget(menu_windows[QT5_MENU_WINDOW ^ wid]);
         delete menu_windows[QT5_MENU_WINDOW ^ wid];
         menu_windows[QT5_MENU_WINDOW ^ wid] = nullptr;
     } else if (QT5_TEXT_WINDOW & wid) {
@@ -120,6 +119,43 @@ void NHMainWindow::destroy_window(winid wid)
     }
 
     QCoreApplication::processEvents();
+}
+
+void NHMainWindow::init_menu(winid wid)
+{
+    if (QT5_MENU_WINDOW & wid) {
+        menu_windows[QT5_MENU_WINDOW ^ wid]->start();
+    } else {
+        printf("That's not gonna work :/\n");
+    }
+}
+
+void NHMainWindow::add_menu_entry(winid wid, int glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P groupacc, int attr, const char *str, BOOLEAN_P preselected)
+{
+    if (QT5_MENU_WINDOW & wid) {
+        menu_windows[QT5_MENU_WINDOW ^ wid]->add(glyph, identifier, accelerator, groupacc, attr, str, preselected);
+    } else {
+        printf("That's not gonna work :/\n");
+    }
+}
+
+void NHMainWindow::flush_menu(winid wid, const char *prompt)
+{
+    if (QT5_MENU_WINDOW & wid) {
+        menu_windows[QT5_MENU_WINDOW ^ wid]->set_menu_prompt(prompt);
+    } else {
+        printf("That's not gonna work :/\n");
+    }
+}
+
+int NHMainWindow::get_menu_selection(winid wid, int how, MENU_ITEM_P **selection)
+{
+    menu_windows[QT5_MENU_WINDOW ^ wid]->setup_menu_selection(how, selection);
+    if (menu_windows[QT5_MENU_WINDOW ^ wid]->exec()) {
+        return menu_windows[QT5_MENU_WINDOW ^ wid]->get_selection_count();
+    };
+
+    return -1;
 }
 
 void NHMainWindow::select_player()
@@ -303,7 +339,10 @@ void NHMainWindow::display_str(winid wid, int attr, const char *str)
         message_windows[QT5_MESSAGE_WINDOW ^ wid]->print_line(str);
     } else if (QT5_STATUS_WINDOW & wid) {
         status_windows[QT5_STATUS_WINDOW ^ wid]->update_status();
+    } else if (QT5_MENU_WINDOW & wid) {
+        menu_windows[QT5_MENU_WINDOW ^ wid]->print_line(attr, str);
     }
+    printf("display %s on %d\n", str, wid);
 }
 
 
