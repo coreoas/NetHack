@@ -73,14 +73,14 @@ class NHMapWindow : public QGraphicsView
     Q_OBJECT
 private:
     QGraphicsScene *scene;
-    QPixmap tiles[MAX_GLYPH];
-    QPixmap *petmark;
+    QPixmap *tiles;
+    QPixmap petmark;
+    int tile_size;
     int max_x;
     int max_y;
-    int tile_size;
     void clear_glyph(int x, int y);
 public:
-    NHMapWindow(QWidget *parent);
+    NHMapWindow(QPixmap *tiles, int tile_size, QWidget *parent);
     void clear();
     void ensure_visible(int x, int y);
     void draw_glyph(int x, int y, int glyph);
@@ -92,7 +92,7 @@ class NHMenuLine : public QWidget {
 
 private:
     CHAR_P accelerator;
-    const ANY_P *identifier;
+    ANY_P identifier;
     BOOLEAN_P selected;
 
     QLabel *selection_label;
@@ -104,7 +104,7 @@ private:
 //     void toggle_select();
 
 public:
-    NHMenuLine(int glyph, const ANY_P *identifier, CHAR_P accelerator, int attr, const char *str, BOOLEAN_P preselected, QWidget *parent);
+    NHMenuLine(QPixmap *glyph, const ANY_P *identifier, CHAR_P accelerator, int attr, const char *str, BOOLEAN_P preselected, QWidget *parent);
     int matchesKeyPress(QString typed_str);
     void toggleSelection();
     BOOLEAN_P is_selected();
@@ -114,6 +114,7 @@ public:
 class NHMenuWindow : public QDialog
 {
     Q_OBJECT
+    QPixmap *tiles;
     int type;
     QVector<NHMenuLine*> lines;
     QVBoxLayout *content_layout;
@@ -128,7 +129,7 @@ class NHMenuWindow : public QDialog
     MENU_ITEM_P **selection;
 
 public:
-    NHMenuWindow(QWidget *parent);
+    NHMenuWindow(QPixmap *tiles, QWidget *parent);
     void done(int r);
     void start();
     void add(int glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P groupacc, int attr, const char *str, BOOLEAN_P preselected);
@@ -204,6 +205,8 @@ private:
     QVector<NHMenuWindow*> menu_windows;
     QVector<NHTextWindow*> text_windows;
     QVector<NHStatusWindow*> status_windows;
+    QPixmap *tiles;
+    int tile_size;
 
     void keyPressEvent(QKeyEvent *e);
 

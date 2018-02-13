@@ -2,14 +2,13 @@ extern "C" {
 #include "tile2x11.h"
 extern short glyph2tile[]; // from tile.c
 }
-
 #include "qt5_port.h"
 #include "qt5_icons.h"
 
 #include <QGraphicsPixmapItem>
 #include <QBitmap>
 
-NHMapWindow::NHMapWindow(QWidget *parent) : QGraphicsView(parent)
+NHMapWindow::NHMapWindow(QPixmap *tiles, int tile_size, QWidget *parent) : QGraphicsView(parent)
 {
     scene = new QGraphicsScene(this);
     scene->setBackgroundBrush(Qt::black);
@@ -19,19 +18,9 @@ NHMapWindow::NHMapWindow(QWidget *parent) : QGraphicsView(parent)
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
-    QPixmap tilemap("x11tiles", "XPM");
-    petmark = new QPixmap(petmark_xpm);
-    tile_size = tilemap.width() / 40;
-
-    int i, j;
-    for (j = 0; j < tilemap.height() / tile_size; j++) {
-        for (i = 0; i < TILES_PER_ROW; i++) {
-            tiles[i + TILES_PER_ROW * j] = tilemap.copy(i * tile_size,
-                                                        j * tile_size,
-                                                        tile_size,
-                                                        tile_size);
-        }
-    }
+    this->tiles = tiles;
+    this->tile_size = tile_size;
+    petmark = QPixmap(petmark_xpm);
 
     draw_glyph(-3, -3, objnum_to_glyph(S_stone));
     max_x = 0;
@@ -69,8 +58,8 @@ void NHMapWindow::draw_glyph(int x, int y, int glyph)
     QGraphicsPixmapItem *new_glyph = scene->addPixmap(tiles[glyph2tile[glyph]]);
     new_glyph->setPos(x * tile_size, y * tile_size);
     if (glyph_is_pet(glyph)) {
-        QGraphicsPixmapItem *new_petmark = scene->addPixmap(*petmark);
-        new_petmark->setPos((x + 1) * tile_size - petmark->width(), y * tile_size);
+        QGraphicsPixmapItem *new_petmark = scene->addPixmap(petmark);
+        new_petmark->setPos((x + 1) * tile_size - petmark.width(), y * tile_size);
     }
 }
 

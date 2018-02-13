@@ -2,6 +2,7 @@
 
 extern "C" {
 #include "func_tab.h"
+#include "tile2x11.h"
 }
 
 
@@ -17,10 +18,27 @@ NHMainWindow* NHMainWindow::instance()
 
 NHMainWindow::NHMainWindow() : QMainWindow() {
     iflags.window_inited = 1;
+
+    tiles = new QPixmap[MAX_GLYPH];
+
+    QPixmap tilemap("x11tiles", "XPM");
+    tile_size = tilemap.width() / 40;
+
+    int i, j;
+    for (j = 0; j < tilemap.height() / tile_size; j++) {
+        for (i = 0; i < TILES_PER_ROW; i++) {
+            tiles[i + TILES_PER_ROW * j] = tilemap.copy(i * tile_size,
+                                                        j * tile_size,
+                                                        tile_size,
+                                                        tile_size);
+        }
+    }
 }
 
 NHMainWindow::~NHMainWindow() {
     iflags.window_inited = 0;
+
+    delete[] tiles;
 }
 
 winid NHMainWindow::create_window(int type)
@@ -35,7 +53,7 @@ winid NHMainWindow::create_window(int type)
         }
 
         case NHW_MAP: {
-            NHMapWindow *new_map_win = new NHMapWindow(this);
+            NHMapWindow *new_map_win = new NHMapWindow(tiles, tile_size, this);
             setCentralWidget(new_map_win);
             new_map_win->hide();
             map_windows.append(new_map_win);
@@ -43,7 +61,7 @@ winid NHMainWindow::create_window(int type)
         }
 
         case NHW_MENU: {
-            NHMenuWindow *new_menu_win = new NHMenuWindow(this);
+            NHMenuWindow *new_menu_win = new NHMenuWindow(tiles, this);
             menu_windows.append(new_menu_win);
             return (winid) (QT5_MENU_WINDOW | (menu_windows.size() - 1));
         }
