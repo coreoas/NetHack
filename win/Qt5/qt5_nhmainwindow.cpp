@@ -1,3 +1,4 @@
+#include <fstream>
 #include "qt5_port.h"
 
 extern "C" {
@@ -17,13 +18,19 @@ NHMainWindow* NHMainWindow::instance()
 }
 
 NHMainWindow::NHMainWindow() : QMainWindow() {
+    // Check that x11tiles file exists
+    if (!std::ifstream("x11tiles").good()) {
+        /* file does not exists or is not readable */
+        raw_printf("Unable to open x11tiles.\n");
+        exit(EXIT_FAILURE);
+        return;
+    }
+
     iflags.window_inited = 1;
-
-    tiles = new QPixmap[MAX_GLYPH];
-
     QPixmap tilemap("x11tiles", "XPM");
     tile_size = tilemap.width() / 40;
 
+    tiles = new QPixmap[MAX_GLYPH];
     int i, j;
     for (j = 0; j < tilemap.height() / tile_size; j++) {
         for (i = 0; i < TILES_PER_ROW; i++) {
@@ -360,7 +367,6 @@ void NHMainWindow::display_str(winid wid, int attr, const char *str)
     } else if (QT5_MENU_WINDOW & wid) {
         menu_windows[QT5_MENU_WINDOW ^ wid]->print_line(attr, str);
     }
-    printf("display %s on %d\n", str, wid);
 }
 
 
