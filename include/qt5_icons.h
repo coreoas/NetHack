@@ -15,6 +15,28 @@ static const char *petmark_xpm[] = {
 ".. ..",
 };
 
+static const char *cursor_mark_xpm[] = {
+"16 16 2 1",
+". c #B99393",
+"  c None",
+" . . . . . . . .",
+".               ",
+"               .",
+".               ",
+"               .",
+".               ",
+"               .",
+".               ",
+"               .",
+".               ",
+"               .",
+".               ",
+"               .",
+".               ",
+"               .",
+". . . . . . . . ",
+};
+
 static const char *checked_checkbox[] = {
 // h w ncolor char per pixel
 "60 60 2 1",

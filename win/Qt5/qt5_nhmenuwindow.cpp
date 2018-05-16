@@ -130,8 +130,6 @@ void NHMenuWindow::add(int glyph, const ANY_P *identifier, CHAR_P accelerator, C
         tile = &tiles[glyph2tile[glyph]];
     }
 
-    printf("item identified by %p as %c\n", identifier, accelerator);
-
     NHMenuLine *new_menu = new NHMenuLine(tile, identifier, accelerator, attr, str, preselected, this);
     content_layout->addWidget(new_menu);
     lines.append(new_menu);

@@ -70,7 +70,8 @@ void qt5_destroy_nhwindow(winid wid)
 
 void qt5_curs(winid wid, int x, int y)
 {
-    return;
+
+    NHMainWindow::instance()->draw_cursor(wid, x, y);
 }
 
 void qt5_putstr(winid wid, int attr, const char *str)

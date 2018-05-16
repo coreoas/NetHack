@@ -75,6 +75,8 @@ private:
     QGraphicsScene *scene;
     QPixmap *tiles;
     QPixmap petmark;
+    QPixmap cursor_mark;
+    QGraphicsPixmapItem* cursor_mark_item;
     int tile_size;
     int max_x;
     int max_y;
@@ -84,6 +86,7 @@ public:
     void clear();
     void ensure_visible(int x, int y);
     void draw_glyph(int x, int y, int glyph);
+    void draw_cursor(int x, int y);
 };
 
 
@@ -222,6 +225,7 @@ public:
     // WIN_MAP display methods
     void ensure_visible(int x, int y);
     void draw_glyph(winid wid, int x, int y, int glyph);
+    void draw_cursor(winid wid, int x, int y);
 
     // menu methods
     void init_menu(winid wid);

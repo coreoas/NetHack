@@ -232,9 +232,14 @@ int NHMainWindow::getch()
 void NHMainWindow::draw_glyph(winid wid, int x, int y, int glyph)
 {
     if (QT5_MAP_WINDOW & wid) {
-        return map_windows[QT5_MAP_WINDOW ^ wid]->draw_glyph(x, y, glyph);
-    } else {
-        printf("That's not gonna work :/\n");
+        map_windows[QT5_MAP_WINDOW ^ wid]->draw_glyph(x, y, glyph);
+    }
+}
+
+void NHMainWindow::draw_cursor(winid wid, int x, int y)
+{
+    if (QT5_MAP_WINDOW & wid) {
+        map_windows[QT5_MAP_WINDOW ^ wid]->draw_cursor(x, y);
     }
 }
 

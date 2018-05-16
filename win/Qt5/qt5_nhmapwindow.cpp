@@ -21,6 +21,9 @@ NHMapWindow::NHMapWindow(QPixmap *tiles, int tile_size, QWidget *parent) : QGrap
     this->tiles = tiles;
     this->tile_size = tile_size;
     petmark = QPixmap(petmark_xpm);
+    cursor_mark = QPixmap(cursor_mark_xpm);
+    cursor_mark_item = scene->addPixmap(cursor_mark);
+    cursor_mark_item->setZValue(1); // so the cursor is always on top of any other glyphs
 
     draw_glyph(-3, -3, objnum_to_glyph(S_stone));
     max_x = 0;
@@ -30,6 +33,8 @@ NHMapWindow::NHMapWindow(QPixmap *tiles, int tile_size, QWidget *parent) : QGrap
 void NHMapWindow::clear()
 {
     scene->clear();
+    cursor_mark_item = scene->addPixmap(cursor_mark);
+    cursor_mark_item->setZValue(1);
     max_x = 0;
     max_y = 0;
     draw_glyph(-3, -3, cmap_to_glyph(S_stone));
@@ -63,6 +68,19 @@ void NHMapWindow::draw_glyph(int x, int y, int glyph)
     }
 }
 
+void NHMapWindow::draw_cursor(int x, int y)
+{
+    if (x > max_x || y > max_y) {
+        clear_glyph(max_x + 5, max_y + 5);
+        QGraphicsPixmapItem *new_boundary_glyph = scene->addPixmap(tiles[glyph2tile[cmap_to_glyph(S_stone)]]);
+        new_boundary_glyph->setPos((std::max(x, max_x) + 5) * tile_size, (std::max(y, max_y) + 5) * tile_size);
+        max_x = std::max(max_x, x);
+        max_y = std::max(max_y, y);
+    }
+
+    cursor_mark_item->setPos(x * tile_size, y * tile_size);
+}
+
 void NHMapWindow::clear_glyph(int x, int y)
 {
     QList<QGraphicsItem *> old_items = scene->items(x * tile_size,
@@ -74,7 +92,10 @@ void NHMapWindow::clear_glyph(int x, int y)
 
     while (!old_items.isEmpty()) {
         QGraphicsItem *old_item = old_items.takeFirst();
-        scene->removeItem(old_item);
-        delete old_item;
+        if (old_item != cursor_mark_item) {
+            // The cursor is never deleted
+            scene->removeItem(old_item);
+            delete old_item;
+        }
     }
 }
