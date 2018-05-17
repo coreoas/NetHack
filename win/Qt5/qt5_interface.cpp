@@ -106,6 +106,7 @@ int qt5_select_menu(winid wid, int how, MENU_ITEM_P **selected)
 
 void qt5_update_inventory()
 {
+    // noop as the inventory is not always shown
     return;
 }
 
@@ -163,7 +164,7 @@ void qt5_nhbell()
 
 int qt5_doprev_message()
 {
-    return 0;
+    return NHMainWindow::instance()->doprev_message();
 }
 
 char qt5_yn_function(const char *ques, const char *choices, CHAR_P dflt)

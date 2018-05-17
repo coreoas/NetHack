@@ -64,6 +64,7 @@ public:
     void set_bold();
     void unset_bold();
     void print_yn(const char *ques, const char *choices, int dflt);
+    void doprev_message();
     void remove_chars(const int n);
 };
 
@@ -240,6 +241,7 @@ public:
     // general gameplay-related methods
     int getch();
     char yn_function(const char *ques, const char *choices, int dflt);
+    int doprev_message();
     int poskey(int *x, int *y, int *mod);
     int get_ext_cmd();
     void display_str(winid wid, int attr, const char *str);

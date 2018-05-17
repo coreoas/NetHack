@@ -1,14 +1,19 @@
+#include <QScrollBar>
+#include <QFontMetrics>
 #include "qt5_port.h"
 
 NHMessageWindow::NHMessageWindow(QWidget *parent) : QDockWidget(parent)
 {
     setFeatures(QDockWidget::NoDockWidgetFeatures);
     setTitleBarWidget(new QWidget());
-    setMinimumHeight(50);
 
     content = new QTextEdit(this);
     content->setReadOnly(true);
     content->setFocusPolicy(Qt::NoFocus);
+
+    // minimum height is 5 lines
+    QFontMetrics font_metrics(content->currentFont());
+    setMinimumHeight(font_metrics.lineSpacing() * 5);
 
     setWidget(content);
 }
@@ -55,4 +60,11 @@ void NHMessageWindow::remove_chars(const int n)
     for (i = 0; i < n; i++) {
         content->textCursor().deletePreviousChar();
     }
+}
+
+void NHMessageWindow::doprev_message()
+{
+    QFontMetrics font_metrics(content->currentFont());
+    QScrollBar *vertical_scrollbar = content->verticalScrollBar();
+    vertical_scrollbar->setValue(vertical_scrollbar->value() - font_metrics.lineSpacing());
 }

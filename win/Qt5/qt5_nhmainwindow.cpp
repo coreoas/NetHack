@@ -284,6 +284,14 @@ char NHMainWindow::yn_function(const char *ques, const char *choices, int dflt)
     }
 }
 
+int NHMainWindow::doprev_message()
+{
+    if (WIN_MESSAGE != -1) {
+        message_windows[QT5_MESSAGE_WINDOW ^ WIN_MESSAGE]->doprev_message();
+    }
+    return 0;
+}
+
 
 int NHMainWindow::poskey(int *x, int *y, int *mod)
 {
