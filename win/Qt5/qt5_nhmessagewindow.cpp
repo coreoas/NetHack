@@ -2,20 +2,14 @@
 #include <QFontMetrics>
 #include "qt5_port.h"
 
-NHMessageWindow::NHMessageWindow(QWidget *parent) : QDockWidget(parent)
+NHMessageWindow::NHMessageWindow(QWidget *parent) : QTextEdit(parent)
 {
-    setFeatures(QDockWidget::NoDockWidgetFeatures);
-    setTitleBarWidget(new QWidget());
-
-    content = new QTextEdit(this);
-    content->setReadOnly(true);
-    content->setFocusPolicy(Qt::NoFocus);
+    setReadOnly(true);
+    setFocusPolicy(Qt::NoFocus);
 
     // minimum height is 5 lines
-    QFontMetrics font_metrics(content->currentFont());
+    QFontMetrics font_metrics(currentFont());
     setMinimumHeight(font_metrics.lineSpacing() * 5);
-
-    setWidget(content);
 }
 
 void NHMessageWindow::print_line(const QString line)
@@ -25,12 +19,12 @@ void NHMessageWindow::print_line(const QString line)
 
 void NHMessageWindow::print_string(const QString str)
 {
-    QTextCursor cursor = content->textCursor();
+    QTextCursor cursor = textCursor();
     cursor.clearSelection();
     cursor.movePosition(QTextCursor::End);
-    content->setTextCursor(cursor);
+    setTextCursor(cursor);
     cursor.insertText(str, format);
-    content->ensureCursorVisible();
+    ensureCursorVisible();
 }
 
 void NHMessageWindow::set_bold()
@@ -52,19 +46,19 @@ void NHMessageWindow::print_yn(const char *ques, const char *choices, int dflt)
 
 void NHMessageWindow::remove_chars(const int n)
 {
-    QTextCursor cursor = content->textCursor();
+    QTextCursor cursor = textCursor();
     cursor.clearSelection();
     cursor.movePosition(QTextCursor::End);
-    content->setTextCursor(cursor);
+    setTextCursor(cursor);
     int i;
     for (i = 0; i < n; i++) {
-        content->textCursor().deletePreviousChar();
+        textCursor().deletePreviousChar();
     }
 }
 
 void NHMessageWindow::doprev_message()
 {
-    QFontMetrics font_metrics(content->currentFont());
-    QScrollBar *vertical_scrollbar = content->verticalScrollBar();
+    QFontMetrics font_metrics(currentFont());
+    QScrollBar *vertical_scrollbar = verticalScrollBar();
     vertical_scrollbar->setValue(vertical_scrollbar->value() - font_metrics.lineSpacing());
 }

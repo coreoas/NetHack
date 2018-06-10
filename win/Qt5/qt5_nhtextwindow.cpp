@@ -3,9 +3,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
-NHTextWindow::NHTextWindow(QWidget *parent) : QDockWidget(parent)
+NHTextWindow::NHTextWindow(QWidget *parent) : QWidget(parent)
 {
-    setFeatures(QDockWidget::NoDockWidgetFeatures);
-    setTitleBarWidget(new QWidget());
     setMinimumHeight(50);
 }

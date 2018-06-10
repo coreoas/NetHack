@@ -228,22 +228,22 @@ void qt5_putmsghistory(const char *str, BOOLEAN_P enable)
 
 void qt5_status_init()
 {
-    return;
+    NHMainWindow::instance()->init_status();
 }
 
 void qt5_status_finish()
 {
-    return;
+    NHMainWindow::instance()->finish_status();
 }
 
 void qt5_status_enablefield(int fldindex, const char *fldname, const char *fieldfmt, BOOLEAN_P enable)
 {
-    return;
+    NHMainWindow::instance()->enablefield_status(fldindex, fldname, fieldfmt, enable);
 }
 
 void qt5_status_update(int fldindex, genericptr_t ptr, int chg, int percentage, int color, unsigned long *colormasks)
 {
-    return;
+    NHMainWindow::instance()->update_status(fldindex, ptr, chg, percentage, color, colormasks);
 }
 
 boolean qt5_can_suspend()

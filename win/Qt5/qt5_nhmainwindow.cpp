@@ -19,6 +19,7 @@ NHMainWindow* NHMainWindow::instance()
 
 NHMainWindow::NHMainWindow() : QMainWindow() {
     // Check that x11tiles file exists
+    // If so, initialize the property tiles[]
     if (!std::ifstream("x11tiles").good()) {
         /* file does not exists or is not readable */
         raw_printf("Unable to open x11tiles.\n");
@@ -40,6 +41,16 @@ NHMainWindow::NHMainWindow() : QMainWindow() {
                                                         tile_size);
         }
     }
+
+    main_content = new QSplitter(this);
+    main_content->setOrientation(Qt::Vertical);
+    main_content->setChildrenCollapsible(false);
+
+    central_widget = new QWidget(this);
+    central_layout = new QVBoxLayout(central_widget);
+    central_layout->setContentsMargins(0, 0, 0, 0);
+    central_layout->addWidget(main_content, 1);
+    setCentralWidget(central_widget);
 }
 
 NHMainWindow::~NHMainWindow() {
@@ -53,16 +64,12 @@ winid NHMainWindow::create_window(int type)
     switch (type){
         case NHW_MESSAGE: {
             NHMessageWindow *new_msg_win = new NHMessageWindow(this);
-            addDockWidget(Qt::TopDockWidgetArea, new_msg_win);
-            new_msg_win->hide();
             message_windows.append(new_msg_win);
             return (winid) (QT5_MESSAGE_WINDOW | (message_windows.size() - 1));
         }
 
         case NHW_MAP: {
             NHMapWindow *new_map_win = new NHMapWindow(tiles, tile_size, this);
-            setCentralWidget(new_map_win);
-            new_map_win->hide();
             map_windows.append(new_map_win);
             return (winid) (QT5_MAP_WINDOW | (map_windows.size() - 1));
         }
@@ -76,18 +83,8 @@ winid NHMainWindow::create_window(int type)
         case NHW_TEXT: {
             // TODO this is not the intended behaviour
             NHTextWindow *new_text_win = new NHTextWindow(this);
-            addDockWidget(Qt::TopDockWidgetArea, new_text_win);
-            new_text_win->hide();
             text_windows.append(new_text_win);
             return (winid) (QT5_TEXT_WINDOW | (text_windows.size() - 1));
-        }
-
-        case NHW_STATUS: {
-            NHStatusWindow *new_status_win = new NHStatusWindow(this);
-            addDockWidget(Qt::BottomDockWidgetArea, new_status_win);
-            new_status_win->hide();
-            status_windows.append(new_status_win);
-            return (winid) (QT5_STATUS_WINDOW | (status_windows.size() - 1));
         }
     }
     printf("invalid window type\n");
@@ -105,15 +102,26 @@ void NHMainWindow::display_window(winid wid, BOOLEAN_P blocking)
 {
     if (QT5_MESSAGE_WINDOW & wid) {
         // TODO handle blocking for message windows, with "--more--"
-        message_windows[QT5_MESSAGE_WINDOW ^ wid]->show();
+        if (main_content->widget(0) == nullptr) {
+            main_content->insertWidget(0, message_windows[QT5_MESSAGE_WINDOW ^ wid]);
+        } else if (main_content->widget(0) != message_windows[QT5_MESSAGE_WINDOW ^ wid]) {
+            main_content->replaceWidget(0, message_windows[QT5_MESSAGE_WINDOW ^ wid]);
+        }
     } else if (QT5_MAP_WINDOW & wid) {
-        map_windows[QT5_MAP_WINDOW ^ wid]->show();
-    } else if (QT5_MENU_WINDOW & wid) {
-        menu_windows[QT5_MENU_WINDOW ^ wid]->exec();
+        if (main_content->widget(1) == nullptr) {
+            main_content->insertWidget(1, map_windows[QT5_MAP_WINDOW ^ wid]);
+        } else if (main_content->widget(1) != map_windows[QT5_MAP_WINDOW ^ wid]) {
+            main_content->replaceWidget(1, map_windows[QT5_MAP_WINDOW ^ wid]);
+        }
     } else if (QT5_TEXT_WINDOW & wid) {
-        text_windows[QT5_TEXT_WINDOW ^ wid]->show();
-    } else if (QT5_STATUS_WINDOW & wid) {
-        status_windows[QT5_STATUS_WINDOW ^ wid]->show();
+        if (main_content->widget(1) == nullptr) {
+            main_content->insertWidget(1, text_windows[QT5_TEXT_WINDOW ^ wid]);
+        } else if (main_content->widget(1) != text_windows[QT5_TEXT_WINDOW ^ wid]) {
+            main_content->replaceWidget(1, text_windows[QT5_TEXT_WINDOW ^ wid]);
+        }
+    } else if (QT5_MENU_WINDOW & wid) {
+        // special case, the widget is not in the layout but is a QDialog
+        menu_windows[QT5_MENU_WINDOW ^ wid]->exec();
     }
     QCoreApplication::processEvents();
 }
@@ -121,29 +129,49 @@ void NHMainWindow::display_window(winid wid, BOOLEAN_P blocking)
 void NHMainWindow::destroy_window(winid wid)
 {
     if (QT5_MESSAGE_WINDOW & wid) {
-        removeDockWidget(message_windows[QT5_MESSAGE_WINDOW ^ wid]);
         // To keep the indexes constant
         // TODO smart index management
+        message_windows[QT5_MESSAGE_WINDOW ^ wid]->hide();
         delete message_windows[QT5_MESSAGE_WINDOW ^ wid];
         message_windows[QT5_MESSAGE_WINDOW ^ wid] = nullptr;
     } else if (QT5_MAP_WINDOW & wid) {
-        takeCentralWidget();
+        map_windows[QT5_MAP_WINDOW ^ wid]->hide();
         delete map_windows[QT5_MAP_WINDOW ^ wid];
         map_windows[QT5_MAP_WINDOW ^ wid] = nullptr;
     } else if (QT5_MENU_WINDOW & wid) {
         delete menu_windows[QT5_MENU_WINDOW ^ wid];
         menu_windows[QT5_MENU_WINDOW ^ wid] = nullptr;
     } else if (QT5_TEXT_WINDOW & wid) {
-        removeDockWidget(text_windows[QT5_TEXT_WINDOW ^ wid]);
+        text_windows[QT5_TEXT_WINDOW ^ wid]->hide();
         delete text_windows[QT5_TEXT_WINDOW ^ wid];
         text_windows[QT5_TEXT_WINDOW ^ wid] = nullptr;
-    } else if (QT5_STATUS_WINDOW & wid) {
-        removeDockWidget(status_windows[QT5_STATUS_WINDOW ^ wid]);
-        delete status_windows[QT5_STATUS_WINDOW ^ wid];
-        status_windows[QT5_STATUS_WINDOW ^ wid] = nullptr;
     }
 
     QCoreApplication::processEvents();
+}
+
+void NHMainWindow::init_status()
+{
+    status_window = new NHStatusWindow(this);
+    central_layout->addWidget(status_window, 0);
+    QCoreApplication::processEvents();
+}
+
+void NHMainWindow::finish_status()
+{
+    central_layout->removeWidget(status_window);
+    delete status_window;
+    QCoreApplication::processEvents();
+}
+
+void NHMainWindow::enablefield_status(int fldindex, const char *fldname, const char *fieldfmt, BOOLEAN_P enable)
+{
+    status_window->enable_field(fldindex, fldname, fieldfmt, enable);
+}
+
+void NHMainWindow::update_status(int fldindex, genericptr_t ptr, int chg, int percentage, int color, unsigned long *colormasks)
+{
+    status_window->update_field(fldindex, ptr, chg, percentage, color, colormasks);
 }
 
 void NHMainWindow::init_menu(winid wid)
@@ -375,8 +403,6 @@ void NHMainWindow::display_str(winid wid, int attr, const char *str)
 {
     if (QT5_MESSAGE_WINDOW & wid) {
         message_windows[QT5_MESSAGE_WINDOW ^ wid]->print_line(str);
-    } else if (QT5_STATUS_WINDOW & wid) {
-        status_windows[QT5_STATUS_WINDOW ^ wid]->update_status();
     } else if (QT5_MENU_WINDOW & wid) {
         menu_windows[QT5_MENU_WINDOW ^ wid]->print_line(attr, str);
     }

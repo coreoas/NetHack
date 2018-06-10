@@ -30,12 +30,12 @@ extern "C" {
 #include <QDialog>
 #include <QPushButton>
 #include <QVector>
-#include <QDockWidget>
 #include <QTextEdit>
 #include <QTextStream>
 #include <QTextCharFormat>
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QSplitter>
 
 
 class NHApplication : public QApplication
@@ -51,11 +51,10 @@ public:
 };
 
 
-class NHMessageWindow : public QDockWidget
+class NHMessageWindow : public QTextEdit
 {
     Q_OBJECT
 private:
-    QTextEdit *content;
     QTextCharFormat format;
 public:
     NHMessageWindow(QWidget *parent);
@@ -145,7 +144,7 @@ public:
 };
 
 
-class NHTextWindow : public QDockWidget
+class NHTextWindow : public QWidget
 {
     Q_OBJECT
 public:
@@ -161,38 +160,20 @@ private:
 public:
     StatusWidget(int type, QWidget *parent);
     void update_value(int newval);
-    void decrease_timeout();
 };
 
-class NHStatusWindow : public QDockWidget
+class NHStatusWindow : public QWidget
 {
     Q_OBJECT
 private:
-    StatusWidget *str_widget;
-    StatusWidget *intl_widget;
-    StatusWidget *wis_widget;
-    StatusWidget *dex_widget;
-    StatusWidget *con_widget;
-    StatusWidget *cha_widget;
-    QLabel *presentation_label;
-    QLabel *gold_label;
-    QLabel *hp_label;
-    QLabel *power_label;
-    QLabel *ac_label;
-    QLabel *level_label;
-    QLabel *exp_label;
-    QLabel *time_label;
-    void update_presentation();
-    void update_gold();
-    void update_hp();
-    void update_power();
-    void update_ac();
-    void update_level();
-    void update_exp();
-    void update_time();
+    QHBoxLayout *first_row;
+    QHBoxLayout *second_row;
+    QVector<QLabel*> status_labels;
+    static QMap<int, int> label_order;
 public:
     NHStatusWindow(QWidget *parent);
-    void update_status();
+    void enable_field(int fldindex, const char *fldname, const char *fieldfmt, BOOLEAN_P enable);
+    void update_field(int fldindex, genericptr_t ptr, int chg, int percentage, int color, unsigned long *colormasks);
 };
 
 class NHMainWindow : public QMainWindow
@@ -203,12 +184,16 @@ private:
     ~NHMainWindow();
     static NHMainWindow *_instance;
 
+    QWidget *central_widget;
+    QVBoxLayout *central_layout;
+    QSplitter *main_content;
+    NHStatusWindow *status_window;
+
     QQueue<int> keybuffer;
     QVector<NHMessageWindow*> message_windows;
     QVector<NHMapWindow*> map_windows;
     QVector<NHMenuWindow*> menu_windows;
     QVector<NHTextWindow*> text_windows;
-    QVector<NHStatusWindow*> status_windows;
     QPixmap *tiles;
     int tile_size;
 
@@ -222,6 +207,12 @@ public:
     void clear_window(winid wid);
     void display_window(winid wid, BOOLEAN_P blocking);
     void destroy_window(winid wid);
+
+    // status methods
+    void init_status();
+    void finish_status();
+    void enablefield_status(int fldindex, const char *fldname, const char *fieldfmt, BOOLEAN_P enable);
+    void update_status(int fldindex, genericptr_t ptr, int chg, int percentage, int color, unsigned long *colormasks);
 
     // WIN_MAP display methods
     void ensure_visible(int x, int y);
