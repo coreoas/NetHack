@@ -18,6 +18,9 @@ extern "C" {
 #define QT5_TEXT_ONLY_MENU 1
 #define QT5_REGULAR_MENU 2
 
+#define QT5_MIN_CENTRAL_WIDGET_WIDTH 300
+#define QT5_MIN_CENTRAL_WIDGET_HEIGHT 400
+
 #include <QApplication>
 #include <QMainWindow>
 #include <QObject>
@@ -147,8 +150,19 @@ public:
 class NHTextWindow : public QWidget
 {
     Q_OBJECT
+    QPushButton *dismiss_button;
+    QTextEdit *content;
+    QTextCharFormat format;
+    boolean _dismiss;
+
+public slots:
+    void dismiss();
+
 public:
     NHTextWindow(QWidget *parent);
+    void print_line(int attr, const char *str);
+    void clear();
+    boolean is_dismissed();
 };
 
 class StatusWidget : public QWidget
@@ -277,9 +291,6 @@ void qt5_getlin(const char *ques, char *input);
 int qt5_get_ext_cmd();
 void qt5_number_pad(int);
 void qt5_delay_output();
-
-void qt5_start_screen();
-void qt5_end_screen();
 
 void qt5_outrip(winid wid, int i, time_t t);
 void qt5_preference_update(const char *prefs);

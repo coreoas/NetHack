@@ -1,6 +1,7 @@
 // #include "qt_xpms.h"
 #include "qt5_port.h"
 #include <QHBoxLayout>
+#include <QFontDatabase>
 
 QMap<int,int> NHStatusWindow::label_order({
     // 1st row
@@ -19,18 +20,29 @@ NHStatusWindow::NHStatusWindow(QWidget *parent) : QWidget(parent)
     first_row = new QHBoxLayout();
     second_row = new QHBoxLayout();
     first_row->setAlignment(Qt::AlignLeft);
+    first_row->setSpacing(0);
     second_row->setAlignment(Qt::AlignLeft);
+    second_row->setSpacing(0);
 
-    main_layout->setContentsMargins(0, 0, 0, 0);
+    main_layout->setContentsMargins(0, 0, 0, 7);
+    // main_layout->setSpacing(0);
     main_layout->addLayout(first_row);
     main_layout->addLayout(second_row);
 
     int i;
+    QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    font.setPointSize(12);
+
     for (i = 0; i < label_order.size(); i++) {
         QLabel *new_label = new QLabel("", this);
         status_labels.append(new_label);
         new_label->hide();
-        new_label->setStyleSheet("font-family: monospace; font-size: 12px;");
+        new_label->setFont(font);
+
+        // HPMAX and ENEMAX are padded differently
+        // to look like "HP: 10 (99)"
+        new_label->setContentsMargins((i == 12 || i == 14) ? 2 : 10, 0, (i == 11 || i == 13) ? 2 : 10, 0);
+
         if (i <= 8) {
             first_row->addWidget(new_label);
         } else {
@@ -80,60 +92,60 @@ void NHStatusWindow::update_field(int fldindex, genericptr_t ptr, int chg, int p
             content.sprintf("%s", (char *) ptr);
             break;
         case BL_STR:
-            content.sprintf("Str: %s", (char *) ptr);
+            content.sprintf("Str:%s", (char *) ptr);
             break;
         case BL_DX:
-            content.sprintf("Dx: %s", (char *) ptr);
+            content.sprintf("Dx:%s", (char *) ptr);
             break;
         case BL_CO:
-            content.sprintf("Co: %s", (char *) ptr);
+            content.sprintf("Co:%s", (char *) ptr);
             break;
         case BL_IN:
-            content.sprintf("In: %s", (char *) ptr);
+            content.sprintf("In:%s", (char *) ptr);
             break;
         case BL_WI:
-            content.sprintf("Wi: %s", (char *) ptr);
+            content.sprintf("Wi:%s", (char *) ptr);
             break;
         case BL_CH:
-            content.sprintf("Ch: %s", (char *) ptr);
+            content.sprintf("Ch:%s", (char *) ptr);
             break;
         case BL_ALIGN:
-            content.sprintf("Align: %s", (char *) ptr);
+            content.sprintf("%s", (char *) ptr);
             break;
         case BL_SCORE:
-            content.sprintf("Score: %s", (char *) ptr);
+            content.sprintf("Score:%s", (char *) ptr);
             break;
         case BL_GOLD:
             // For BL_GOLD, the value is formated with special char like
             // \GXXXXNNNN that is not handled here (see how genl_putmixed works)
-            content.sprintf("$: %s", ((char *) ptr) + 11);
+            content.sprintf("$:%s", ((char *) ptr) + 11);
             break;
         case BL_ENE:
-            content.sprintf("Pw: %s", (char *) ptr);
+            content.sprintf("Pw:%s", (char *) ptr);
             break;
         case BL_ENEMAX:
             content.sprintf("(%s)", (char *) ptr);
             break;
         case BL_XP:
-            content.sprintf("Lvl: %s", (char *) ptr);
+            content.sprintf("Lvl:%s", (char *) ptr);
             break;
         case BL_AC:
-            content.sprintf("AC: %s", (char *) ptr);
+            content.sprintf("AC:%s", (char *) ptr);
             break;
         case BL_HD:
-            content.sprintf("HD: %s", (char *) ptr);
+            content.sprintf("HD:%s", (char *) ptr);
             break;
         case BL_TIME:
-            content.sprintf("Time: %s", (char *) ptr);
+            content.sprintf("Time:%s", (char *) ptr);
             break;
         case BL_HP:
-            content.sprintf("HP: %s", (char *) ptr);
+            content.sprintf("HP:%s", (char *) ptr);
             break;
         case BL_HPMAX:
             content.sprintf("(%s)", (char *) ptr);
             break;
         case BL_EXP:
-            content.sprintf("Xp: %s", (char *) ptr);
+            content.sprintf("Xp:%s", (char *) ptr);
             break;
         }
     }

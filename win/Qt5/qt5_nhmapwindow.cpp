@@ -13,8 +13,8 @@ NHMapWindow::NHMapWindow(QPixmap *tiles, int tile_size, QWidget *parent) : QGrap
     scene = new QGraphicsScene(this);
     scene->setBackgroundBrush(Qt::black);
     setScene(scene);
-    setMinimumWidth(300);
-    setMinimumHeight(400);
+    setMinimumWidth(QT5_MIN_CENTRAL_WIDGET_WIDTH);
+    setMinimumHeight(QT5_MIN_CENTRAL_WIDGET_HEIGHT);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     setAlignment(Qt::AlignLeft | Qt::AlignTop);
 

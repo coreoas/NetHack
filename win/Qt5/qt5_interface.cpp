@@ -195,11 +195,13 @@ void qt5_delay_output()
 
 void qt5_start_screen()
 {
+    // noops because they are tty-specific functions.
     return;
 }
 
 void qt5_end_screen()
 {
+    // noops because they are tty-specific functions.
     return;
 }
 
@@ -302,16 +304,20 @@ struct window_procs Qt5_procs = {
     qt5_number_pad,
     qt5_delay_output,
 #ifdef CHANGE_COLOR
-    noop,
+    donull,
 #ifdef MAC
-    noop,
-    noop,
+    donull,
+    donull,
 #endif
-    noop,
+    donull,
 #endif
     qt5_start_screen,
     qt5_end_screen,
+#ifdef GRAPHIC_TOMBSTONE
     qt5_outrip,
+#else
+    genl_outrip,
+#endif
     qt5_preference_update,
     qt5_getmsghistory,
     qt5_putmsghistory,

@@ -81,7 +81,6 @@ winid NHMainWindow::create_window(int type)
         }
 
         case NHW_TEXT: {
-            // TODO this is not the intended behaviour
             NHTextWindow *new_text_win = new NHTextWindow(this);
             text_windows.append(new_text_win);
             return (winid) (QT5_TEXT_WINDOW | (text_windows.size() - 1));
@@ -95,6 +94,8 @@ void NHMainWindow::clear_window(winid wid)
 {
     if (QT5_MAP_WINDOW & wid) {
         map_windows[QT5_MAP_WINDOW ^ wid]->clear();
+    } else if (QT5_TEXT_WINDOW & wid) {
+        text_windows[QT5_TEXT_WINDOW ^ wid]->clear();
     }
 }
 
@@ -107,18 +108,32 @@ void NHMainWindow::display_window(winid wid, BOOLEAN_P blocking)
         } else if (main_content->widget(0) != message_windows[QT5_MESSAGE_WINDOW ^ wid]) {
             main_content->replaceWidget(0, message_windows[QT5_MESSAGE_WINDOW ^ wid]);
         }
+        main_content->setStretchFactor(0, 0);
     } else if (QT5_MAP_WINDOW & wid) {
         if (main_content->widget(1) == nullptr) {
             main_content->insertWidget(1, map_windows[QT5_MAP_WINDOW ^ wid]);
         } else if (main_content->widget(1) != map_windows[QT5_MAP_WINDOW ^ wid]) {
             main_content->replaceWidget(1, map_windows[QT5_MAP_WINDOW ^ wid]);
         }
+        main_content->setStretchFactor(1, 1);
     } else if (QT5_TEXT_WINDOW & wid) {
         if (main_content->widget(1) == nullptr) {
             main_content->insertWidget(1, text_windows[QT5_TEXT_WINDOW ^ wid]);
         } else if (main_content->widget(1) != text_windows[QT5_TEXT_WINDOW ^ wid]) {
             main_content->replaceWidget(1, text_windows[QT5_TEXT_WINDOW ^ wid]);
         }
+        main_content->setStretchFactor(1, 1);
+        // Whatever the value of blocking, text windows must always wait for dismissal.
+        while (true) {
+            if (text_windows[QT5_TEXT_WINDOW ^ wid]->is_dismissed())
+                break;
+            if (!keybuffer.isEmpty()) {
+                keybuffer.dequeue();
+                break;
+            }
+            QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents);
+        }
+
     } else if (QT5_MENU_WINDOW & wid) {
         // special case, the widget is not in the layout but is a QDialog
         menu_windows[QT5_MENU_WINDOW ^ wid]->exec();
@@ -405,6 +420,8 @@ void NHMainWindow::display_str(winid wid, int attr, const char *str)
         message_windows[QT5_MESSAGE_WINDOW ^ wid]->print_line(str);
     } else if (QT5_MENU_WINDOW & wid) {
         menu_windows[QT5_MENU_WINDOW ^ wid]->print_line(attr, str);
+    } else if (QT5_TEXT_WINDOW & wid) {
+        text_windows[QT5_TEXT_WINDOW ^ wid]->print_line(attr, str);
     }
 }
 
