@@ -71,20 +71,35 @@ NHMenuWindow::NHMenuWindow(QPixmap *tiles, QWidget *parent) : QDialog(parent)
     this->tiles = tiles;
 
     content_layout = new QVBoxLayout();
+    content_layout->setContentsMargins(0, 0, 0, 0);
     content_layout->setSpacing(0);
 
-    button_layout = new QHBoxLayout();
-    accept_button = new QPushButton("Ok", this);
-    connect(accept_button, SIGNAL(clicked()), this, SLOT(accept()));
-    reject_button = new QPushButton("Cancel", this);
-    connect(reject_button, SIGNAL(clicked()), this, SLOT(reject()));
+    QHBoxLayout *button_layout = new QHBoxLayout();
+    button_layout->setContentsMargins(10, 10, 10, 10);
+    button_layout->setSpacing(10);
+    QPushButton *accept_button = new QPushButton("Ok", this);
+    connect(accept_button, &QPushButton::clicked, this, &NHMenuWindow::accept);
+    QPushButton *reject_button = new QPushButton("Cancel", this);
+    connect(reject_button, &QPushButton::clicked, this, &NHMenuWindow::reject);
     button_layout->addWidget(accept_button);
     button_layout->addWidget(reject_button);
 
-    main_layout = new QVBoxLayout(this);
+    main_widget = new QWidget();
+    QVBoxLayout *main_layout = new QVBoxLayout(main_widget);
+    main_layout->setSpacing(0);
     main_layout->addLayout(content_layout);
     main_layout->addStretch(1);
-    main_layout->addLayout(button_layout);
+
+    scrollable_area = new QScrollArea(this);
+    scrollable_area->setWidgetResizable(true);
+    scrollable_area->setWidget(main_widget);
+    scrollable_area->setMinimumHeight(100);
+    scrollable_area->setFixedWidth(300);
+    QVBoxLayout *scrollable_area_layout = new QVBoxLayout(this);
+    scrollable_area_layout->setContentsMargins(0, 0, 0, 0);
+    scrollable_area_layout->setSpacing(0);
+    scrollable_area_layout->addWidget(scrollable_area);
+    scrollable_area_layout->addLayout(button_layout);
 }
 
 void NHMenuWindow::done(int r) {
@@ -113,6 +128,8 @@ void NHMenuWindow::done(int r) {
         delete child;
     }
     lines.clear();
+    scrollable_area->setFixedWidth(300);
+    scrollable_area->setMinimumHeight(100);
 
     QDialog::done(r);
 }
@@ -121,6 +138,24 @@ void NHMenuWindow::start()
 {
     cursor_index = 0;
     type = QT5_REGULAR_MENU;
+}
+
+int NHMenuWindow::exec()
+{
+    // opens the dialog, and flushes the heights.
+    // This is not the best but is required to manipulate the QScrollArea height
+    show();
+
+    int content_height = main_widget->geometry().height() + 40;
+    if (scrollable_area->height() < content_height) {
+        scrollable_area->setMinimumHeight(std::min(content_height, 500));
+    }
+    int content_width = main_widget->geometry().width() + 40;
+    if (scrollable_area->width() < content_width) {
+        scrollable_area->setFixedWidth(content_width);
+    }
+
+    return QDialog::exec();
 }
 
 void NHMenuWindow::add(int glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P groupacc, int attr, const char *str, BOOLEAN_P preselected)

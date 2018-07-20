@@ -122,12 +122,10 @@ class NHMenuWindow : public QDialog
     Q_OBJECT
     QPixmap *tiles;
     int type;
+    QWidget *main_widget;
+    QScrollArea *scrollable_area;
     QVector<NHMenuLine*> lines;
     QVBoxLayout *content_layout;
-    QVBoxLayout *main_layout;
-    QHBoxLayout *button_layout;
-    QPushButton *accept_button;
-    QPushButton *reject_button;
     int cursor_index;
 
     int how;
@@ -138,6 +136,7 @@ public:
     NHMenuWindow(QPixmap *tiles, QWidget *parent);
     void done(int r);
     void start();
+    int exec();
     void add(int glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P groupacc, int attr, const char *str, BOOLEAN_P preselected);
     void setup_menu_selection(int how, MENU_ITEM_P **selection);
     int get_selection_count();

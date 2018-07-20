@@ -13,7 +13,7 @@ NHTextWindow::NHTextWindow(QWidget *parent) : QWidget(parent)
     QVBoxLayout *layout = new QVBoxLayout(this);
     content = new QTextEdit(this);
     dismiss_button = new QPushButton("Dismiss", this);
-    connect(dismiss_button, SIGNAL(clicked()), this, SLOT(dismiss()));
+    connect(dismiss_button, &QPushButton::clicked, this, &NHTextWindow::dismiss);
 
     content->setReadOnly(true);
     content->setFocusPolicy(Qt::NoFocus);
