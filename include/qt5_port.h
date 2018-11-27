@@ -39,6 +39,7 @@ extern "C" {
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QSplitter>
+#include <QCheckBox>
 
 
 class NHApplication : public QApplication
@@ -98,21 +99,22 @@ class NHMenuLine : public QWidget {
 
 private:
     CHAR_P accelerator;
-    ANY_P identifier;
-    BOOLEAN_P selected;
+    CHAR_P group_accelerator;
+    ANY_P *identifier;
 
-    QLabel *selection_label;
+    QCheckBox *selection_box;
     QLabel *glyph_label;
     QLabel *accelerator_label;
     QLabel *description_label;
 
-// public slots:
-//     void toggle_select();
+protected:
+    void mouseReleaseEvent(QMouseEvent *event);
 
 public:
-    NHMenuLine(QPixmap *glyph, const ANY_P *identifier, CHAR_P accelerator, int attr, const char *str, BOOLEAN_P preselected, QWidget *parent);
-    int matchesKeyPress(QString typed_str);
-    void toggleSelection();
+    NHMenuLine(QPixmap *glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P group_accelerator, int attr, const char *str, BOOLEAN_P preselected, QWidget *parent);
+    ~NHMenuLine();
+    void toggle_selection();
+    int matches_key_press(QString typed_str);
     BOOLEAN_P is_selected();
     MENU_ITEM_P get_menu_item();
 };
@@ -127,6 +129,7 @@ class NHMenuWindow : public QDialog
     QVector<NHMenuLine*> lines;
     QVBoxLayout *content_layout;
     int cursor_index;
+    CHAR_P current_accelerator;
 
     int how;
     int selection_count;

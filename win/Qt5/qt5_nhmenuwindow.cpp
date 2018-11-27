@@ -7,20 +7,32 @@ extern short glyph2tile[]; // from tile.c
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <string.h>
 
-NHMenuLine::NHMenuLine(QPixmap *glyph, const ANY_P *identifier, CHAR_P accelerator, int attr, const char *str, BOOLEAN_P preselected, QWidget *parent) : QWidget(parent)
+NHMenuLine::NHMenuLine(QPixmap *glyph, const ANY_P *identifier, CHAR_P accelerator, CHAR_P group_accelerator, int attr, const char *str, BOOLEAN_P preselected, QWidget *parent) : QWidget(parent)
 {
-    this->selected = preselected;
     this->accelerator = accelerator;
+    this->group_accelerator = group_accelerator;
 
-    if (identifier) {
-        this->identifier = *identifier;
-    }
+    QHBoxLayout *layout = new QHBoxLayout(this);
 
-    selection_label = new QLabel("", this);
     glyph_label = new QLabel(this);
     if (glyph) {
         glyph_label->setPixmap(*glyph);
+    }
+
+    if (identifier && identifier->a_long != 0) {
+        // The memory of identifier can be freed, it's safer to keep a copy of it.
+        this->identifier = new ANY_P;
+        *this->identifier = *identifier;
+        selection_box = new QCheckBox(this);
+        selection_box->setCheckState(preselected ? Qt::Checked : Qt::Unchecked);
+        selection_box->setFixedWidth(20);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->addWidget(selection_box, 0);
+    } else {
+        this->identifier = nullptr;
+        layout->setContentsMargins(20, 0, 0, 0);
     }
 
     accelerator_label = new QLabel(QString(accelerator), this);
@@ -31,35 +43,59 @@ NHMenuLine::NHMenuLine(QPixmap *glyph, const ANY_P *identifier, CHAR_P accelerat
         description_label->setStyleSheet("text-decoration: underline;");
     }
 
-    QHBoxLayout *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(selection_label, 0);
     layout->addWidget(accelerator_label, 0);
     layout->addWidget(glyph_label, 0);
     layout->addWidget(description_label, 1);
 }
 
-int NHMenuLine::matchesKeyPress(QString typed_str)
+NHMenuLine::~NHMenuLine()
 {
-    return typed_str.size() && identifier.a_void != 0 && accelerator == typed_str.at(0);
+    if (NULL != this->identifier) {
+        delete this->identifier;
+    }
 }
 
-void NHMenuLine::toggleSelection()
+void NHMenuLine::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (identifier.a_void != 0) {
-        selected = !selected;
-        selection_label->setText(selected ? "+" : "");
+    if (identifier != nullptr && identifier->a_long != 0) {
+        selection_box->toggle();
+    }
+
+    event->accept();
+}
+
+int NHMenuLine::matches_key_press(QString typed_str)
+{
+    // '@' is a shorthand to select all the items in the list
+    return (
+        typed_str.size() &&
+        identifier != nullptr &&
+        identifier->a_long != 0 &&
+        (typed_str.at(0) == '@' || typed_str.at(0) == accelerator || typed_str.at(0) == group_accelerator)
+    );
+}
+
+void NHMenuLine::toggle_selection()
+{
+    if (identifier != nullptr && identifier->a_long != 0) {
+        selection_box->toggle();
     }
 }
 
 BOOLEAN_P NHMenuLine::is_selected()
 {
-    return selected;
+    if (identifier != nullptr && identifier->a_long != 0) {
+        return selection_box->isChecked();
+    }
+
+    return false;
 }
 
 MENU_ITEM_P NHMenuLine::get_menu_item() {
     MENU_ITEM_P output_item;
-    output_item.item = identifier;
+    if (identifier != nullptr) {
+        output_item.item = *identifier;
+    }
     output_item.count = -1; // select all - TODO should be set by the user
 
     return output_item;
@@ -69,6 +105,7 @@ MENU_ITEM_P NHMenuLine::get_menu_item() {
 NHMenuWindow::NHMenuWindow(QPixmap *tiles, QWidget *parent) : QDialog(parent)
 {
     this->tiles = tiles;
+    this->current_accelerator = 'a';
 
     content_layout = new QVBoxLayout();
     content_layout->setContentsMargins(0, 0, 0, 0);
@@ -111,6 +148,8 @@ void NHMenuWindow::done(int r) {
             }
         }
 
+        // As stated in window.doc,
+        // freeing this array is the caller's responsibility
         *selection = new MENU_ITEM_P[get_selection_count()];
 
         int current_selection = 0;
@@ -122,12 +161,18 @@ void NHMenuWindow::done(int r) {
         }
     }
 
+    // We also reset the accelerator counter.
+    this->current_accelerator = 'a';
+
+    // We clear all the layouts and items they contain.
     QLayoutItem *child;
     while ((child = content_layout->takeAt(0)) != 0) {
         delete child->widget();
         delete child;
     }
     lines.clear();
+
+    // Finally we reset the size of the scrollable area.
     scrollable_area->setFixedWidth(300);
     scrollable_area->setMinimumHeight(100);
 
@@ -144,6 +189,7 @@ int NHMenuWindow::exec()
 {
     // opens the dialog, and flushes the heights.
     // This is not the best but is required to manipulate the QScrollArea height
+    setModal(true);
     show();
 
     int content_height = main_widget->geometry().height() + 40;
@@ -165,7 +211,16 @@ void NHMenuWindow::add(int glyph, const ANY_P *identifier, CHAR_P accelerator, C
         tile = &tiles[glyph2tile[glyph]];
     }
 
-    NHMenuLine *new_menu = new NHMenuLine(tile, identifier, accelerator, attr, str, preselected, this);
+    CHAR_P chosen_accelerator = accelerator;
+
+    // In case a selectable item has 0 for accelerator
+    if (identifier && identifier->a_long != 0 && accelerator == 0 && current_accelerator != 'Z') {
+        chosen_accelerator = current_accelerator;
+        // current_accelerator is incremented except if it equals 'z', and we restart at 'A'
+        current_accelerator = (current_accelerator == 'z') ? 'A' : (current_accelerator + 1);
+    }
+
+    NHMenuLine *new_menu = new NHMenuLine(tile, identifier, chosen_accelerator, groupacc, attr, str, preselected, this);
     content_layout->addWidget(new_menu);
     lines.append(new_menu);
 }
@@ -188,7 +243,7 @@ void NHMenuWindow::setup_menu_selection(int how, MENU_ITEM_P **selection) {
 void NHMenuWindow::print_line(int attr, const char *str)
 {
     type = QT5_TEXT_ONLY_MENU;
-    NHMenuLine *new_menu = new NHMenuLine(0, 0, 0, 0, str, false, this);
+    NHMenuLine *new_menu = new NHMenuLine(0, 0, 0, 0, 0, str, false, this);
     content_layout->addWidget(new_menu);
 }
 
@@ -197,8 +252,8 @@ void NHMenuWindow::keyPressEvent(QKeyEvent *e)
     QString typed_str = e->text();
     if (typed_str.size()) {
         for (int i = 0; i < lines.size(); i++) {
-            if (lines.at(i)->matchesKeyPress(typed_str)) {
-                lines.at(i)->toggleSelection();
+            if (lines.at(i)->matches_key_press(typed_str)) {
+                lines.at(i)->toggle_selection();
             }
         }
     } else if (e->key() == Qt::Key_Up || e->key() == Qt::Key_Down) {

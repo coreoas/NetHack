@@ -123,7 +123,8 @@ void NHMainWindow::display_window(winid wid, BOOLEAN_P blocking)
             main_content->replaceWidget(1, text_windows[QT5_TEXT_WINDOW ^ wid]);
         }
         main_content->setStretchFactor(1, 1);
-        // Whatever the value of blocking, text windows must always wait for dismissal.
+        // Whatever the value of the blocking parameter,
+        // text windows must always wait for dismissal.
         while (true) {
             if (text_windows[QT5_TEXT_WINDOW ^ wid]->is_dismissed())
                 break;
