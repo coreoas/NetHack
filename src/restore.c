@@ -1,4 +1,4 @@
-/* NetHack 3.6	restore.c	$NHDT-Date: 1451082255 2015/12/25 22:24:15 $  $NHDT-Branch: NetHack-3.6.0 $:$NHDT-Revision: 1.103 $ */
+/* NetHack 3.6	restore.c	$NHDT-Date: 1542798626 2018/11/21 11:10:26 $  $NHDT-Branch: NetHack-3.6.2-beta01 $:$NHDT-Revision: 1.109 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Michael Allison, 2009. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -35,8 +35,7 @@ STATIC_DCL struct monst *FDECL(restmonchn, (int, BOOLEAN_P));
 STATIC_DCL struct fruit *FDECL(loadfruitchn, (int));
 STATIC_DCL void FDECL(freefruitchn, (struct fruit *));
 STATIC_DCL void FDECL(ghostfruit, (struct obj *));
-STATIC_DCL boolean
-FDECL(restgamestate, (int, unsigned int *, unsigned int *));
+STATIC_DCL boolean FDECL(restgamestate, (int, unsigned int *, unsigned int *));
 STATIC_DCL void FDECL(restlevelstate, (unsigned int, unsigned int));
 STATIC_DCL int FDECL(restlevelfile, (int, XCHAR_P));
 STATIC_OVL void FDECL(restore_msghistory, (int));
@@ -299,10 +298,32 @@ boolean ghostly, frozen;
         /* get contents of a container or statue */
         if (Has_contents(otmp)) {
             struct obj *otmp3;
+
             otmp->cobj = restobjchn(fd, ghostly, Is_IceBox(otmp));
             /* restore container back pointers */
             for (otmp3 = otmp->cobj; otmp3; otmp3 = otmp3->nobj)
                 otmp3->ocontainer = otmp;
+        } else if (SchroedingersBox(otmp)) {
+            struct obj *catcorpse;
+
+            /*
+             * TODO:  Remove this after 3.6.x save compatibility is dropped.
+             *
+             * For 3.6.2, SchroedingersBox() always has a cat corpse in it.
+             * For 3.6.[01], it was empty and its weight was falsified
+             * to have the value it would have had if there was one inside.
+             * Put a non-rotting cat corpse in this box to convert to 3.6.2.
+             *
+             * [Note: after this fix up, future save/restore of this object
+             * will take the Has_contents() code path above.]
+             */
+            if ((catcorpse = mksobj(CORPSE, TRUE, FALSE)) != 0) {
+                otmp->spe = 1; /* flag for special SchroedingersBox */
+                set_corpsenm(catcorpse, PM_HOUSECAT);
+                (void) stop_timer(ROT_CORPSE, obj_to_any(catcorpse));
+                add_to_container(otmp, catcorpse);
+                otmp->owt = weight(otmp);
+            }
         }
         if (otmp->bypass)
             otmp->bypass = 0;
@@ -521,6 +542,7 @@ unsigned int *stuckid, *steedid;
     struct obj *otmp, *tmp_bc;
     char timebuf[15];
     unsigned long uid;
+    boolean defer_perm_invent;
 
     mread(fd, (genericptr_t) &uid, sizeof uid);
     if (SYSOPT_CHECK_SAVE_UID
@@ -531,7 +553,7 @@ unsigned int *stuckid, *steedid;
         if (!wizard)
             return FALSE;
     }
-    mread(fd, (genericptr_t) &context, sizeof(struct context_info));
+    mread(fd, (genericptr_t) &context, sizeof (struct context_info));
     if (context.warntype.speciesidx >= LOW_PM)
         context.warntype.species = &mons[context.warntype.speciesidx];
 
@@ -539,7 +561,16 @@ unsigned int *stuckid, *steedid;
        file option values instead of keeping old save file option values
        if partial restore fails and we resort to starting a new game */
     newgameflags = flags;
-    mread(fd, (genericptr_t) &flags, sizeof(struct flag));
+    mread(fd, (genericptr_t) &flags, sizeof (struct flag));
+    /* avoid keeping permanent inventory window up to date during restore
+       (setworn() calls update_inventory); attempting to include the cost
+       of unpaid items before shopkeeper's bill is available is a no-no;
+       named fruit names aren't accessible yet either
+       [3.6.2: moved perm_invent from flags to iflags to keep it out of
+       save files; retaining the override here is simpler than trying to
+       to figure out where it really belongs now] */
+    defer_perm_invent = iflags.perm_invent;
+    iflags.perm_invent = FALSE;
     /* wizard and discover are actually flags.debug and flags.explore;
        player might be overriding the save file values for them;
        in the discover case, we don't want to set that for a normal
@@ -589,6 +620,7 @@ unsigned int *stuckid, *steedid;
         u.uz.dlevel = 1;
         /* revert to pre-restore option settings */
         iflags.deferred_X = FALSE;
+        iflags.perm_invent = defer_perm_invent;
         flags = newgameflags;
 #ifdef SYSFLAGS
         sysflags = newgamesysflags;
@@ -645,14 +677,14 @@ unsigned int *stuckid, *steedid;
     restlevchn(fd);
     mread(fd, (genericptr_t) &moves, sizeof moves);
     mread(fd, (genericptr_t) &monstermoves, sizeof monstermoves);
-    mread(fd, (genericptr_t) &quest_status, sizeof(struct q_score));
-    mread(fd, (genericptr_t) spl_book, sizeof(struct spell) * (MAXSPELL + 1));
+    mread(fd, (genericptr_t) &quest_status, sizeof (struct q_score));
+    mread(fd, (genericptr_t) spl_book, (MAXSPELL + 1) * sizeof (struct spell));
     restore_artifacts(fd);
     restore_oracles(fd);
     if (u.ustuck)
-        mread(fd, (genericptr_t) stuckid, sizeof(*stuckid));
+        mread(fd, (genericptr_t) stuckid, sizeof *stuckid);
     if (u.usteed)
-        mread(fd, (genericptr_t) steedid, sizeof(*steedid));
+        mread(fd, (genericptr_t) steedid, sizeof *steedid);
     mread(fd, (genericptr_t) pl_character, sizeof pl_character);
 
     mread(fd, (genericptr_t) pl_fruit, sizeof pl_fruit);
@@ -665,6 +697,8 @@ unsigned int *stuckid, *steedid;
     /* must come after all mons & objs are restored */
     relink_timers(FALSE);
     relink_light_sources(FALSE);
+    /* inventory display is now viable */
+    iflags.perm_invent = defer_perm_invent;
     return TRUE;
 }
 
@@ -1068,7 +1102,7 @@ boolean ghostly;
             set_residency(mtmp, FALSE);
         place_monster(mtmp, mtmp->mx, mtmp->my);
         if (mtmp->wormno)
-            place_wsegs(mtmp);
+            place_wsegs(mtmp, NULL);
 
         /* regenerate monsters while on another level */
         if (!u.uz.dlevel)

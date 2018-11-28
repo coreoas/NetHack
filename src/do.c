@@ -1,4 +1,4 @@
-/* NetHack 3.6	do.c	$NHDT-Date: 1472809073 2016/09/02 09:37:53 $  $NHDT-Branch: NetHack-3.6.0 $:$NHDT-Revision: 1.158 $ */
+/* NetHack 3.6	do.c	$NHDT-Date: 1543052696 2018/11/24 09:44:56 $  $NHDT-Branch: NetHack-3.6.2-beta01 $:$NHDT-Revision: 1.175 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Derek S. Ray, 2015. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -149,8 +149,7 @@ const char *verb;
     if (obj->otyp == BOULDER && boulder_hits_pool(obj, x, y, FALSE)) {
         return TRUE;
     } else if (obj->otyp == BOULDER && (t = t_at(x, y)) != 0
-             && (t->ttyp == PIT || t->ttyp == SPIKED_PIT
-                 || t->ttyp == TRAPDOOR || t->ttyp == HOLE)) {
+               && (is_pit(t->ttyp) || is_hole(t->ttyp))) {
         if (((mtmp = m_at(x, y)) && mtmp->mtrapped)
             || (u.utrap && u.ux == x && u.uy == y)) {
             if (*verb)
@@ -172,14 +171,16 @@ const char *verb;
                            "squished under a boulder", NO_KILLER_PREFIX);
                     return FALSE; /* player remains trapped */
                 } else
-                    u.utrap = 0;
+                    reset_utrap(TRUE);
             }
         }
         if (*verb) {
             if (Blind && (x == u.ux) && (y == u.uy)) {
                 You_hear("a CRASH! beneath you.");
             } else if (!Blind && cansee(x, y)) {
-                pline_The("boulder %s%s.", t->tseen ? "" : "triggers and ",
+                pline_The("boulder %s%s.",
+                    (t->ttyp == TRAPDOOR && !t->tseen)
+                        ? "triggers and " : "",
                           t->ttyp == TRAPDOOR
                               ? "plugs a trap door"
                               : t->ttyp == HOLE ? "plugs a hole"
@@ -956,7 +957,7 @@ dodown()
         if (trap && uteetering_at_seen_pit(trap)) {
             dotrap(trap, TOOKPLUNGE);
             return 1;
-        } else if (!trap || (trap->ttyp != TRAPDOOR && trap->ttyp != HOLE)
+        } else if (!trap || !is_hole(trap->ttyp)
                    || !Can_fall_thru(&u.uz) || !trap->tseen) {
             if (flags.autodig && !context.nopick && uwep && is_pick(uwep)) {
                 return use_pick_axe2(uwep);
@@ -988,10 +989,31 @@ dodown()
         return 0;
     }
 
-    if (trap)
-        You("%s %s.", Flying ? "fly" : locomotion(youmonst.data, "jump"),
-            trap->ttyp == HOLE ? "down the hole" : "through the trap door");
+    if (trap) {
+        const char *down_or_thru = trap->ttyp == HOLE ? "down" : "through";
+        const char *actn = Flying ? "fly" : locomotion(youmonst.data, "jump");
 
+        if (youmonst.data->msize >= MZ_HUGE) {
+            char qbuf[QBUFSZ];
+
+            You("don't fit %s easily.", down_or_thru);
+            Sprintf(qbuf, "Try to squeeze %s?", down_or_thru);
+            if (yn(qbuf) == 'y') {
+                if (!rn2(3)) {
+                    actn = "manage to squeeze";
+                    losehp(Maybe_Half_Phys(rnd(4)),
+                           "contusion from a small passage", KILLED_BY);
+                } else {
+                    You("were unable to fit %s.", down_or_thru);
+                    return 0;
+                }
+            } else {
+                return 0;
+            }
+        }
+        You("%s %s the %s.", actn, down_or_thru,
+            trap->ttyp == HOLE ? "hole" : "trap door");
+    }
     if (trap && Is_stronghold(&u.uz)) {
         goto_hell(FALSE, TRUE);
     } else {
@@ -1039,7 +1061,9 @@ doup()
         return 1;
     }
     if (ledger_no(&u.uz) == 1) {
-        if (yn("Beware, there will be no return! Still climb?") != 'y')
+        if (iflags.debug_fuzzer)
+            return 0;
+        if (yn("Beware, there will be no return!  Still climb?") != 'y')
             return 0;
     }
     if (!next_to_u()) {
@@ -1219,7 +1243,7 @@ boolean at_stairs, falling, portal;
     check_special_room(TRUE); /* probably was a trap door */
     if (Punished)
         unplacebc();
-    u.utrap = 0; /* needed in level_tele */
+    reset_utrap(FALSE); /* needed in level_tele */
     fill_pit(u.ux, u.uy);
     u.ustuck = 0; /* idem */
     u.uinwater = 0;
@@ -1422,10 +1446,9 @@ boolean at_stairs, falling, portal;
                with the situation, so only say something when debugging */
             if (wizard)
                 pline("(monster in hero's way)");
-            if (!rloc(mtmp, TRUE))
+            if (!rloc(mtmp, TRUE) || (mtmp = m_at(u.ux, u.uy)) != 0)
                 /* no room to move it; send it away, to return later */
-                migrate_to_level(mtmp, ledger_no(&u.uz), MIGR_RANDOM,
-                                 (coord *) 0);
+                m_into_limbo(mtmp);
         }
     }
 
@@ -1858,7 +1881,8 @@ register int timex;
 }
 
 void
-heal_legs()
+heal_legs(how)
+int how; /* 0: ordinary, 1: dismounting steed, 2: limbs turn to stone */
 {
     if (Wounded_legs) {
         if (ATEMP(A_DEX) < 0) {
@@ -1866,7 +1890,11 @@ heal_legs()
             context.botl = 1;
         }
 
-        if (!u.usteed) {
+        /* when mounted, wounded legs applies to the steed;
+           during petrification countdown, "your limbs turn to stone"
+           before the final stages and that calls us (how==2) to cure
+           wounded legs, but we want to suppress the feel better message */
+        if (!u.usteed && how != 2) {
             const char *legs = body_part(LEG);
 
             if ((EWounded_legs & BOTH_SIDES) == BOTH_SIDES)
@@ -1876,7 +1904,7 @@ heal_legs()
             Your("%s %s better.", legs, vtense(legs, "feel"));
         }
 
-        HWounded_legs = EWounded_legs = 0;
+        HWounded_legs = EWounded_legs = 0L;
 
         /* Wounded_legs reduces carrying capacity, so we want
            an encumbrance check when they're healed.  However,
@@ -1888,7 +1916,7 @@ heal_legs()
            it might be immediately contradicted [able to carry
            more when steed becomes healthy, then possible floor
            feedback, then able to carry less when back on foot]. */
-        if (!in_steed_dismounting)
+        if (how == 0)
             (void) encumber_msg();
     }
 }

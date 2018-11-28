@@ -1,4 +1,4 @@
-/* NetHack 3.6	pray.c	$NHDT-Date: 1519662898 2018/02/26 16:34:58 $  $NHDT-Branch: NetHack-3.6.0 $:$NHDT-Revision: 1.96 $ */
+/* NetHack 3.6	pray.c	$NHDT-Date: 1540596912 2018/10/26 23:35:12 $  $NHDT-Branch: NetHack-3.6.2-beta01 $:$NHDT-Revision: 1.104 $ */
 /* Copyright (c) Benson I. Margulies, Mike Stephenson, Steve Linhart, 1989. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -355,7 +355,7 @@ int trouble;
         You("are back on solid ground.");
         /* teleport should always succeed, but if not, just untrap them */
         if (!safe_teleds(FALSE))
-            u.utrap = 0;
+            reset_utrap(TRUE);
         break;
     case TROUBLE_STARVING:
         /* temporarily lost strength recovery now handled by init_uhunger() */
@@ -524,7 +524,7 @@ int trouble;
         break;
     }
     case TROUBLE_WOUNDED_LEGS:
-        heal_legs();
+        heal_legs(0);
         break;
     case TROUBLE_STUNNED:
         make_stunned(0L, TRUE);
@@ -921,7 +921,7 @@ aligntyp g_align;
      *  - fix all of your problems;
      *  - do you a gratuitous favor.
      *
-     * If you make it to the the last category, you roll randomly again
+     * If you make it to the last category, you roll randomly again
      * to see what they do for you.
      *
      * If your luck is at least 0, then you are guaranteed rescued from
@@ -1074,7 +1074,11 @@ aligntyp g_align;
             u.uhp = u.uhpmax;
             if (Upolyd)
                 u.mh = u.mhmax;
-            ABASE(A_STR) = AMAX(A_STR);
+            if (ABASE(A_STR) < AMAX(A_STR)) {
+                ABASE(A_STR) = AMAX(A_STR);
+                context.botl = 1; /* before potential message */
+                (void) encumber_msg();
+            }
             if (u.uhunger < 900)
                 init_uhunger();
             /* luck couldn't have been negative at start of prayer because
@@ -1325,7 +1329,6 @@ dosacrifice()
     if (otmp->otyp == CORPSE) {
         register struct permonst *ptr = &mons[otmp->corpsenm];
         struct monst *mtmp;
-        extern const int monstr[];
 
         /* KMH, conduct */
         u.uconduct.gnostic++;
@@ -1338,7 +1341,7 @@ dosacrifice()
 
         if (otmp->corpsenm == PM_ACID_BLOB
             || (monstermoves <= peek_at_iced_corpse_age(otmp) + 50)) {
-            value = monstr[otmp->corpsenm] + 1;
+            value = mons[otmp->corpsenm].difficulty + 1;
             if (otmp->oeaten)
                 value = eaten_stat(value, otmp);
         }
@@ -1939,12 +1942,12 @@ doturn()
         pline("For some reason, %s seems to ignore you.", u_gname());
         aggravate();
         exercise(A_WIS, FALSE);
-        return 0;
+        return 1;
     }
     if (Inhell) {
         pline("Since you are in Gehennom, %s won't help you.", u_gname());
         aggravate();
-        return 0;
+        return 1;
     }
     pline("Calling upon %s, you chant an arcane formula.", u_gname());
     exercise(A_WIS, TRUE);
@@ -2178,6 +2181,7 @@ blocked_boulder(dx, dy)
 int dx, dy;
 {
     register struct obj *otmp;
+    int nx, ny;
     long count = 0L;
 
     for (otmp = level.objects[u.ux + dx][u.uy + dy]; otmp;
@@ -2186,6 +2190,7 @@ int dx, dy;
             count += otmp->quan;
     }
 
+    nx = u.ux + 2 * dx, ny = u.uy + 2 * dy; /* next spot beyond boulder(s) */
     switch (count) {
     case 0:
         /* no boulders--not blocked */
@@ -2193,17 +2198,24 @@ int dx, dy;
     case 1:
         /* possibly blocked depending on if it's pushable */
         break;
+    case 2:
+        /* this is only approximate since multiple boulders might sink */
+        if (is_pool_or_lava(nx, ny)) /* does its own isok() check */
+            break; /* still need Sokoban check below */
+        /*FALLTHRU*/
     default:
         /* more than one boulder--blocked after they push the top one;
            don't force them to push it first to find out */
         return TRUE;
     }
 
-    if (!isok(u.ux + 2 * dx, u.uy + 2 * dy))
+    if (dx && dy && Sokoban) /* can't push boulder diagonally in Sokoban */
         return TRUE;
-    if (IS_ROCK(levl[u.ux + 2 * dx][u.uy + 2 * dy].typ))
+    if (!isok(nx, ny))
         return TRUE;
-    if (sobj_at(BOULDER, u.ux + 2 * dx, u.uy + 2 * dy))
+    if (IS_ROCK(levl[nx][ny].typ))
+        return TRUE;
+    if (sobj_at(BOULDER, nx, ny))
         return TRUE;
 
     return FALSE;

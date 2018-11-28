@@ -106,6 +106,9 @@ boolean talk;
     set_itimeout(&HStun, xtime);
 }
 
+/* Sick is overloaded with both fatal illness and food poisoning (via
+   u.usick_type bit mask), but delayed killer can only support one or
+   the other at a time.  They should become separate intrinsics.... */
 void
 make_sick(xtime, cause, talk, type)
 long xtime;
@@ -113,9 +116,10 @@ const char *cause; /* sickness cause */
 boolean talk;
 int type;
 {
+    struct kinfo *kptr;
     long old = Sick;
 
-#if 0
+#if 0   /* tell player even if hero is unconscious */
     if (Unaware)
         talk = FALSE;
 #endif
@@ -148,11 +152,20 @@ int type;
         context.botl = TRUE;
     }
 
+    kptr = find_delayed_killer(SICK);
     if (Sick) {
         exercise(A_CON, FALSE);
-        delayed_killer(SICK, KILLED_BY_AN, cause);
+        /* setting delayed_killer used to be unconditional, but that's
+           not right when make_sick(0) is called to cure food poisoning
+           if hero was also fatally ill; this is only approximate */
+        if (xtime || !old || !kptr) {
+            int kpfx = ((cause && !strcmp(cause, "#wizintrinsic"))
+                        ? KILLED_BY : KILLED_BY_AN);
+
+            delayed_killer(SICK, kpfx, cause);
+        }
     } else
-        dealloc_killer(find_delayed_killer(SICK));
+        dealloc_killer(kptr);
 }
 
 void
@@ -162,7 +175,7 @@ const char *msg;
 {
     long old = Slimed;
 
-#if 0
+#if 0   /* tell player even if hero is unconscious */
     if (Unaware)
         msg = 0;
 #endif
@@ -170,7 +183,7 @@ const char *msg;
     if ((xtime != 0L) ^ (old != 0L)) {
         context.botl = TRUE;
         if (msg)
-            pline1(msg);
+            pline("%s", msg);
     }
     if (!Slimed)
         dealloc_killer(find_delayed_killer(SLIMED));
@@ -186,7 +199,7 @@ const char *killername;
 {
     long old = Stoned;
 
-#if 0
+#if 0   /* tell player even if hero is unconscious */
     if (Unaware)
         msg = 0;
 #endif
@@ -194,7 +207,7 @@ const char *killername;
     if ((xtime != 0L) ^ (old != 0L)) {
         context.botl = TRUE;
         if (msg)
-            pline1(msg);
+            pline("%s", msg);
     }
     if (!Stoned)
         dealloc_killer(find_delayed_killer(STONED));
@@ -584,8 +597,7 @@ register struct obj *otmp;
                the spell or with a unihorn; this is better than full healing
                in that it can restore all of them, not just half, and a
                blessed potion restores them all at once */
-            if (otmp->otyp == POT_RESTORE_ABILITY &&
-                u.ulevel < u.ulevelmax) {
+            if (otmp->otyp == POT_RESTORE_ABILITY && u.ulevel < u.ulevelmax) {
                 do {
                     pluslvl(FALSE);
                 } while (u.ulevel < u.ulevelmax && otmp->blessed);
@@ -595,9 +607,9 @@ register struct obj *otmp;
     case POT_HALLUCINATION:
         if (Hallucination || Halluc_resistance)
             nothing++;
-        (void) make_hallucinated(
-            itimeout_incr(HHallucination, rn1(200, 600 - 300 * bcsign(otmp))),
-            TRUE, 0L);
+        (void) make_hallucinated(itimeout_incr(HHallucination,
+                                          rn1(200, 600 - 300 * bcsign(otmp))),
+                                 TRUE, 0L);
         break;
     case POT_WATER:
         if (!otmp->blessed && !otmp->cursed) {
@@ -892,9 +904,9 @@ register struct obj *otmp;
         }
         break;
     case POT_SPEED:
+        /* skip when mounted; heal_legs() would heal steed's legs */
         if (Wounded_legs && !otmp->cursed && !u.usteed) {
-            /* heal_legs() would heal steeds legs */
-            heal_legs();
+            heal_legs(0);
             unkn++;
             break;
         }
@@ -1464,7 +1476,7 @@ int how;
                         wake_nearto(tx, ty, mon->data->mlevel * 10);
                     mon->mhp -= d(2, 6);
                     /* should only be by you */
-                    if (mon->mhp < 1)
+                    if (DEADMONSTER(mon))
                         killed(mon);
                     else if (is_were(mon->data) && !is_human(mon->data))
                         new_were(mon); /* revert to human */
@@ -1487,7 +1499,7 @@ int how;
                     pline("%s rusts.", Monnam(mon));
                 mon->mhp -= d(1, 6);
                 /* should only be by you */
-                if (mon->mhp < 1)
+                if (DEADMONSTER(mon))
                     killed(mon);
             }
             break;
@@ -1502,7 +1514,7 @@ int how;
                 if (!is_silent(mon->data))
                     wake_nearto(tx, ty, mon->data->mlevel * 10);
                 mon->mhp -= d(obj->cursed ? 2 : 1, obj->blessed ? 4 : 8);
-                if (mon->mhp < 1) {
+                if (DEADMONSTER(mon)) {
                     if (your_fault)
                         killed(mon);
                     else
@@ -1523,7 +1535,7 @@ int how;
         */
         }
         /* target might have been killed */
-        if (mon->mhp > 0) {
+        if (!DEADMONSTER(mon)) {
             if (angermon)
                 wakeup(mon, TRUE);
             else
@@ -1920,26 +1932,22 @@ dodip()
                            5, 95)) {
             pline1(nothing_happens);
         } else {
-            boolean was_wep, was_swapwep, was_quiver;
             short save_otyp = obj->otyp;
 
             /* KMH, conduct */
             u.uconduct.polypiles++;
 
-            was_wep = (obj == uwep);
-            was_swapwep = (obj == uswapwep);
-            was_quiver = (obj == uquiver);
-
             obj = poly_obj(obj, STRANGE_OBJECT);
 
-            if (was_wep)
-                setuwep(obj);
-            else if (was_swapwep)
-                setuswapwep(obj);
-            else if (was_quiver)
-                setuqwep(obj);
-
-            if (obj->otyp != save_otyp) {
+            /*
+             * obj might be gone:
+             *  poly_obj() -> set_wear() -> Amulet_on() -> useup()
+             * if obj->otyp is worn amulet and becomes AMULET_OF_CHANGE.
+             */
+            if (!obj) {
+                makeknown(POT_POLYMORPH);
+                return 1;
+            } else if (obj->otyp != save_otyp) {
                 makeknown(POT_POLYMORPH);
                 useup(potion);
                 prinv((char *) 0, obj, 0L);

@@ -1,4 +1,4 @@
-/* NetHack 3.6	files.c	$NHDT-Date: 1524950534 2018/04/28 21:22:14 $  $NHDT-Branch: NetHack-3.6.0 $:$NHDT-Revision: 1.238 $ */
+/* NetHack 3.6	files.c	$NHDT-Date: 1543395733 2018/11/28 09:02:13 $  $NHDT-Branch: NetHack-3.6.2-beta01 $:$NHDT-Revision: 1.244 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Derek S. Ray, 2015. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -666,7 +666,7 @@ void
 really_close()
 {
     int fd;
-    
+
     if (lftrack.init) {
         fd = lftrack.fd;
 
@@ -1692,7 +1692,7 @@ int retryct;
 #ifdef USE_FCNTL
     lockfd = open(filename, O_RDWR);
     if (lockfd == -1) {
-        HUP raw_printf("Cannot open file %s. Is NetHack installed correctly?",
+        HUP raw_printf("Cannot open file %s.  Is NetHack installed correctly?",
                        filename);
         nesting--;
         return FALSE;
@@ -1717,8 +1717,8 @@ int retryct;
 #ifdef USE_FCNTL
         if (retryct--) {
             HUP raw_printf(
-                "Waiting for release of fcntl lock on %s. (%d retries left).",
-                filename, retryct);
+               "Waiting for release of fcntl lock on %s.  (%d retries left.)",
+                           filename, retryct);
             sleep(1);
         } else {
             HUP(void) raw_print("I give up.  Sorry.");
@@ -2156,24 +2156,27 @@ char sep;
         return (char *) 0;
 
     while (*str) {
-	if (*str == sep) nsep++;
-	str++;
+        if (*str == sep)
+            nsep++;
+        str++;
     }
     csep = rn2(nsep);
     str = begin;
     while ((csep > 0) && *str) {
-	str++;
-	if (*str == sep) csep--;
+        str++;
+        if (*str == sep)
+            csep--;
     }
     if (*str) {
-	if (*str == sep) str++;
-	begin = str;
-	while (*str && *str != sep) {
-	    str++;
-	    len++;
-	}
-	*str = '\0';
-	if (len)
+        if (*str == sep)
+            str++;
+        begin = str;
+        while (*str && *str != sep) {
+            str++;
+            len++;
+        }
+        *str = '\0';
+        if (len)
             return begin;
     }
     return (char *) 0;
@@ -2491,7 +2494,7 @@ char *origbuf;
         n = atoi(bufp);
         if (n < 1) {
             config_error_add(
-                "Illegal value in MAX_STATUENAME_RANK (minimum is 1).");
+                      "Illegal value in MAX_STATUENAME_RANK (minimum is 1).");
             return FALSE;
         }
         sysopt.tt_oname_maxrank = n;
@@ -2733,7 +2736,7 @@ struct _config_error_frame {
     struct _config_error_frame *next;
 };
 
-struct _config_error_frame *config_error_data = (struct _config_error_frame *)0;
+static struct _config_error_frame *config_error_data = 0;
 
 void
 config_error_init(from_file, sourcename, secure)
@@ -2742,7 +2745,7 @@ const char *sourcename;
 boolean secure;
 {
     struct _config_error_frame *tmp = (struct _config_error_frame *)
-        alloc(sizeof(struct _config_error_frame));
+        alloc(sizeof (struct _config_error_frame));
 
     tmp->line_num = 0;
     tmp->num_errors = 0;
@@ -2751,8 +2754,8 @@ boolean secure;
     tmp->secure = secure;
     tmp->origline[0] = '\0';
     if (sourcename && sourcename[0]) {
-        (void) strncpy(tmp->source, sourcename, sizeof(tmp->source)-1);
-        tmp->source[sizeof(tmp->source)-1] = '\0';
+        (void) strncpy(tmp->source, sourcename, sizeof (tmp->source) - 1);
+        tmp->source[sizeof (tmp->source) - 1] = '\0';
     } else
         tmp->source[0] = '\0';
 
@@ -2775,49 +2778,44 @@ const char *line;
     ced->line_num++;
     ced->origline_shown = FALSE;
     if (line && line[0]) {
-        (void) strncpy(ced->origline, line, sizeof(ced->origline)-1);
-        ced->origline[sizeof(ced->origline)-1] = '\0';
+        (void) strncpy(ced->origline, line, sizeof (ced->origline) - 1);
+        ced->origline[sizeof (ced->origline) - 1] = '\0';
     } else
         ced->origline[0] = '\0';
 
     return TRUE;
 }
 
-/*VARARGS1*/
-void config_error_add
-VA_DECL(const char *, str)
+/* varargs 'config_error_add()' moved to pline.c */
+void
+config_erradd(buf)
+const char *buf;
 {
-    char buf[BUFSZ];
     char lineno[QBUFSZ];
 
-    VA_START(str);
-    VA_INIT(str, char *);
-
-    Vsprintf(buf, str, VA_ARGS);
+    if (!buf || !*buf)
+        buf = "Unknown error";
 
     if (!config_error_data) {
-        pline("%s.", *buf ? buf : "Unknown error");
+        /* either very early, where pline() will use raw_print(), or
+           player gave bad value when prompted by interactive 'O' command */
+        pline("%s%s.", !iflags.window_inited ? "config_error_add: " : "", buf);
         wait_synch();
         return;
     }
 
     config_error_data->num_errors++;
-    if (!config_error_data->origline_shown
-        && !config_error_data->secure) {
+    if (!config_error_data->origline_shown && !config_error_data->secure) {
         pline("\n%s", config_error_data->origline);
         config_error_data->origline_shown = TRUE;
     }
-    if (config_error_data->line_num > 0
-        && !config_error_data->secure) {
-        Sprintf(lineno, "Line %i: ", config_error_data->line_num);
+    if (config_error_data->line_num > 0 && !config_error_data->secure) {
+        Sprintf(lineno, "Line %d: ", config_error_data->line_num);
     } else
         lineno[0] = '\0';
-    pline("%s %s%s.",
-          config_error_data->secure ? "Error:" : " *",
-          lineno,
-          *buf ? buf : "Unknown error");
 
-    VA_END();
+    pline("%s %s%s.", config_error_data->secure ? "Error:" : " *",
+          lineno, buf);
 }
 
 int
@@ -2830,17 +2828,14 @@ config_error_done()
         return 0;
     n = config_error_data->num_errors;
     if (n) {
-        pline("\n%i error%s in %s.\n", n,
+        pline("\n%d error%s in %s.\n", n,
                    (n > 1) ? "s" : "",
                    *config_error_data->source
               ? config_error_data->source : configfile);
         wait_synch();
     }
-
     config_error_data = tmp->next;
-
     free(tmp);
-
     return n;
 }
 
@@ -3105,7 +3100,8 @@ boolean FDECL((*proc), (char *));
                     char *section;
                     char *bufp = find_optparam(buf);
                     if (!bufp) {
-                        config_error_add("Format is CHOOSE=section1,section2,...");
+                        config_error_add(
+                                    "Format is CHOOSE=section1,section2,...");
                         rv = FALSE;
                         free(buf);
                         buf = (char *) 0;
@@ -3196,8 +3192,8 @@ int which_set;
     }
     if (!chosen_symset_end)
         config_error_add("Missing finish for symset \"%s\"",
-                   symset[which_set].name ? symset[which_set].name
-                                          : "unknown");
+                         symset[which_set].name ? symset[which_set].name
+                                                : "unknown");
 
     config_error_done();
 
@@ -3542,7 +3538,7 @@ const char *dir UNUSED_if_not_OS2_CODEVIEW;
 
 /* ----------  END SCOREBOARD CREATION ----------- */
 
-/* ----------  BEGIN PANIC/IMPOSSIBLE LOG ----------- */
+/* ----------  BEGIN PANIC/IMPOSSIBLE/TESTING LOG ----------- */
 
 /*ARGSUSED*/
 void
@@ -3579,7 +3575,29 @@ const char *reason; /* explanation */
     return;
 }
 
-/* ----------  END PANIC/IMPOSSIBLE LOG ----------- */
+void
+testinglog(filenm, type, reason)
+const char *filenm;   /* ad hoc file name */
+const char *type;
+const char *reason;   /* explanation */
+{
+    FILE *lfile;
+    char fnbuf[BUFSZ];
+
+    if (!filenm)
+        return;
+    Strcpy(fnbuf, filenm);
+    if (index(fnbuf, '.') == 0)
+        Strcat(fnbuf, ".log");
+    lfile = fopen_datafile(fnbuf, "a", TROUBLEPREFIX);
+    if (lfile) {
+        (void) fprintf(lfile, "%s\n%s\n", type, reason);
+        (void) fclose(lfile);
+    }
+    return;
+}
+
+/* ----------  END PANIC/IMPOSSIBLE/TESTING LOG ----------- */
 
 #ifdef SELF_RECOVER
 

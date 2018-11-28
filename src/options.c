@@ -1,4 +1,4 @@
-/* NetHack 3.6	options.c	$NHDT-Date: 1526112322 2018/05/12 08:05:22 $  $NHDT-Branch: master $:$NHDT-Revision: 1.323 $ */
+/* NetHack 3.6	options.c	$NHDT-Date: 1543395749 2018/11/28 09:02:29 $  $NHDT-Branch: NetHack-3.6.2-beta01 $:$NHDT-Revision: 1.334 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Michael Allison, 2008. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -26,6 +26,10 @@ NEARDATA struct instance_flags iflags; /* provide linkage */
 #define PREFER_TILED TRUE
 #else
 #define PREFER_TILED FALSE
+#endif
+
+#ifdef CURSES_GRAPHICS
+extern int curses_read_attrs(char *attrs);
 #endif
 
 enum window_option_types {
@@ -78,7 +82,7 @@ static struct Bool_Opt {
 #else
     { "asksavedisk", (boolean *) 0, FALSE, SET_IN_FILE },
 #endif
-    { "autodescribe", &iflags.autodescribe, FALSE, SET_IN_GAME },
+    { "autodescribe", &iflags.autodescribe, TRUE, SET_IN_GAME },
     { "autodig", &flags.autodig, FALSE, SET_IN_GAME },
     { "autoopen", &flags.autoopen, TRUE, SET_IN_GAME },
     { "autopickup", &flags.pickup, TRUE, SET_IN_GAME },
@@ -110,7 +114,7 @@ static struct Bool_Opt {
     { "confirm", &flags.confirm, TRUE, SET_IN_GAME },
     { "dark_room", &flags.dark_room, TRUE, SET_IN_GAME },
     { "eight_bit_tty", &iflags.wc_eight_bit_input, FALSE, SET_IN_GAME }, /*WC*/
-#ifdef TTY_GRAPHICS
+#if defined(TTY_GRAPHICS) || defined(CURSES_GRAPHICS)
     { "extmenu", &iflags.extmenu, FALSE, SET_IN_GAME },
 #else
     { "extmenu", (boolean *) 0, FALSE, SET_IN_FILE },
@@ -130,6 +134,7 @@ static struct Bool_Opt {
     { "force_invmenu", &iflags.force_invmenu, FALSE, SET_IN_GAME },
     { "fullscreen", &iflags.wc2_fullscreen, FALSE, SET_IN_FILE },
     { "goldX", &iflags.goldX, FALSE, SET_IN_GAME },
+    { "guicolor", &iflags.wc2_guicolor, TRUE, SET_IN_GAME},
     { "help", &flags.help, TRUE, SET_IN_GAME },
     { "herecmd_menu", &iflags.herecmd_menu, FALSE, SET_IN_GAME },
     { "hilite_pet", &iflags.wc_hilite_pet, FALSE, SET_IN_GAME }, /*WC*/
@@ -160,7 +165,7 @@ static struct Bool_Opt {
 #else
     { "menu_overlay", (boolean *) 0, FALSE, SET_IN_FILE },
 #endif
-    { "mouse_support", &iflags.wc_mouse_support, TRUE, DISP_IN_GAME }, /*WC*/
+    { "monpolycontrol", &iflags.mon_polycontrol, FALSE, SET_IN_WIZGAME },
 #ifdef NEWS
     { "news", &iflags.news, TRUE, DISP_IN_GAME },
 #else
@@ -173,7 +178,8 @@ static struct Bool_Opt {
 #else
     { "page_wait", (boolean *) 0, FALSE, SET_IN_FILE },
 #endif
-    { "perm_invent", &flags.perm_invent, FALSE, SET_IN_GAME },
+    /* 3.6.2: move perm_invent from flags to iflags and out of save file */
+    { "perm_invent", &iflags.perm_invent, FALSE, SET_IN_GAME },
     { "pickup_thrown", &flags.pickup_thrown, TRUE, SET_IN_GAME },
     { "popup_dialog", &iflags.wc_popup_dialog, FALSE, SET_IN_GAME },   /*WC*/
     { "preload_tiles", &iflags.wc_preload_tiles, TRUE, DISP_IN_GAME }, /*WC*/
@@ -220,6 +226,9 @@ static struct Bool_Opt {
     { "tombstone", &flags.tombstone, TRUE, SET_IN_GAME },
     { "toptenwin", &iflags.toptenwin, FALSE, SET_IN_GAME },
     { "travel", &flags.travelcmd, TRUE, SET_IN_GAME },
+#ifdef DEBUG
+    { "travel_debug", &iflags.trav_debug, FALSE, SET_IN_WIZGAME }, /*hack.c*/
+#endif
     { "use_darkgray", &iflags.wc2_darkgray, TRUE, SET_IN_FILE },
 #ifdef WIN32
     { "use_inverse", &iflags.wc_inverse, TRUE, SET_IN_GAME }, /*WC*/
@@ -263,7 +272,7 @@ static struct Comp_Opt {
       DISP_IN_GAME },
     { "align_message", "message window alignment", 20, DISP_IN_GAME }, /*WC*/
     { "align_status", "status window alignment", 20, DISP_IN_GAME },   /*WC*/
-    { "altkeyhandler", "alternate key handler", 20, DISP_IN_GAME },
+    { "altkeyhandler", "alternate key handler", 20, SET_IN_GAME },
 #ifdef BACKWARD_COMPAT
     { "boulder", "deprecated (use S_boulder in sym file instead)", 1,
       SET_IN_GAME },
@@ -321,13 +330,14 @@ static struct Comp_Opt {
     { "monsters", "the symbols to use for monsters", MAXMCLASSES,
       SET_IN_FILE },
     { "msghistory", "number of top line messages to save", 5, DISP_IN_GAME },
-#ifdef TTY_GRAPHICS
+#if defined(TTY_GRAPHICS) || defined(CURSES_GRAPHICS)
     { "msg_window", "the type of message window required", 1, SET_IN_GAME },
 #else
     { "msg_window", "the type of message window required", 1, SET_IN_FILE },
 #endif
     { "name", "your character's name (e.g., name:Merlin-W)", PL_NSIZ,
       DISP_IN_GAME },
+    { "mouse_support", "game receives click info from mouse", 0, SET_IN_GAME },
     { "number_pad", "use the number pad for movement", 1, SET_IN_GAME },
     { "objects", "the symbols to use for objects", MAXOCLASSES, SET_IN_FILE },
     { "packorder", "the inventory order of the items in your pack",
@@ -347,6 +357,7 @@ static struct Comp_Opt {
 #endif
     { "paranoid_confirmation", "extra prompting in certain situations", 28,
       SET_IN_GAME },
+    { "petattr",  "attributes for highlighting pets", 12, SET_IN_FILE },
     { "pettype", "your preferred initial pet type", 4, DISP_IN_GAME },
     { "pickup_burden", "maximum burden picked up before prompt", 20,
       SET_IN_GAME },
@@ -381,6 +392,13 @@ static struct Comp_Opt {
       20, SET_IN_GAME },
 #else
     { "statushilites", "highlight control", 20, SET_IN_FILE },
+#endif
+#ifdef CURSES_GRAPHICS
+    { "statuslines",
+      "0,1,2 = classic behavior, 3 = alternative behavior",
+      20, DISP_IN_GAME },
+#else
+    { "statuslines", "# of status lines", 20, SET_IN_FILE },
 #endif
     { "symset", "load a set of display symbols from the symbols file", 70,
       SET_IN_GAME },
@@ -422,6 +440,9 @@ static struct Comp_Opt {
 #ifdef BACKWARD_COMPAT
     { "DECgraphics", "load DECGraphics display symbols", 70, SET_IN_FILE },
     { "IBMgraphics", "load IBMGraphics display symbols", 70, SET_IN_FILE },
+#ifdef CURSES_GRAPHICS
+    {"cursesgraphics", "load curses display symbols", 70, SET_IN_FILE},
+#endif
 #ifdef MAC_GRAPHICS_ENV
     { "Macgraphics", "load MACGraphics display symbols", 70, SET_IN_FILE },
 #endif
@@ -778,6 +799,15 @@ initoptions_init()
 #endif
 #endif /* UNIX || VMS */
 
+#if defined(MSDOS) || defined(WIN32)
+    /* Use IBM defaults. Can be overridden via config file */
+    if (!symset[PRIMARY].name) {
+        load_symset("IBMGraphics_2", PRIMARY);
+    }
+    if (!symset[ROGUESET].name) {
+        load_symset("RogueEpyx", ROGUESET);
+    }
+#endif
 #ifdef MAC_GRAPHICS_ENV
     if (!symset[PRIMARY].name)
         load_symset("MACGraphics", PRIMARY);
@@ -1417,19 +1447,31 @@ const char *prompt;
             break;
         any.a_int = i + 1;
         add_menu(tmpwin, NO_GLYPH, &any, 0, 0, ATR_NONE, colornames[i].name,
-                 MENU_UNSELECTED);
+                 (colornames[i].color == NO_COLOR) ? MENU_SELECTED
+                                                   : MENU_UNSELECTED);
     }
     end_menu(tmpwin, (prompt && *prompt) ? prompt : "Pick a color");
     pick_cnt = select_menu(tmpwin, PICK_ONE, &picks);
     destroy_nhwindow(tmpwin);
     if (pick_cnt > 0) {
-        i = colornames[picks->item.a_int - 1].color;
+        i = colornames[picks[0].item.a_int - 1].color;
+        /* pick_cnt==2: explicitly picked something other than the
+           preselected entry */
+        if (pick_cnt == 2 && i == NO_COLOR)
+            i = colornames[picks[1].item.a_int - 1].color;
         free((genericptr_t) picks);
         return i;
+    } else if (pick_cnt == 0) {
+        /* pick_cnt==0: explicitly picking preselected entry toggled it off */
+        return NO_COLOR;
     }
     return -1;
 }
 
+/* ask about highlighting attribute; for menu headers and menu
+   coloring patterns, only one attribute at a time is allowed;
+   for status highlighting, multiple attributes are allowed [overkill;
+   life would be much simpler if that were restricted to one also...] */
 int
 query_attr(prompt)
 const char *prompt;
@@ -1438,7 +1480,11 @@ const char *prompt;
     anything any;
     int i, pick_cnt;
     menu_item *picks = (menu_item *) 0;
+    boolean allow_many = (prompt && !strncmpi(prompt, "Choose", 6));
+    int default_attr = ATR_NONE;
 
+    if (prompt && strstri(prompt, "menu headings"))
+        default_attr = iflags.menu_headings;
     tmpwin = create_nhwindow(NHW_MENU);
     start_menu(tmpwin);
     any = zeroany;
@@ -1447,16 +1493,61 @@ const char *prompt;
             break;
         any.a_int = i + 1;
         add_menu(tmpwin, NO_GLYPH, &any, 0, 0, attrnames[i].attr,
-                 attrnames[i].name, MENU_UNSELECTED);
+                 attrnames[i].name,
+                 (attrnames[i].attr == default_attr) ? MENU_SELECTED
+                                                     : MENU_UNSELECTED);
     }
     end_menu(tmpwin, (prompt && *prompt) ? prompt : "Pick an attribute");
-    pick_cnt = select_menu(tmpwin, PICK_ONE, &picks);
+    pick_cnt = select_menu(tmpwin, allow_many ? PICK_ANY: PICK_ONE, &picks);
     destroy_nhwindow(tmpwin);
     if (pick_cnt > 0) {
-        i = attrnames[picks->item.a_int - 1].attr;
+        int j, k = 0;
+
+        if (allow_many) {
+            /* PICK_ANY, with one preselected entry which should be
+               excluded if any other choices were picked */
+            for (i = 0; i < pick_cnt; ++i) {
+                j = picks[i].item.a_int - 1;
+                if (attrnames[j].attr != ATR_NONE || pick_cnt == 1) {
+                    switch (attrnames[j].attr) {
+                    case ATR_DIM:
+                        k |= HL_DIM;
+                        break;
+                    case ATR_BLINK:
+                        k |= HL_BLINK;
+                        break;
+                    case ATR_ULINE:
+                        k |= HL_ULINE;
+                        break;
+                    case ATR_INVERSE:
+                        k |= HL_INVERSE;
+                        break;
+                    case ATR_BOLD:
+                        k |= HL_BOLD;
+                        break;
+                    case ATR_NONE:
+                        k = HL_NONE;
+                        break;
+                    }
+                }
+            }
+        } else {
+            /* PICK_ONE, but might get 0 or 2 due to preselected entry */
+            j = picks[0].item.a_int - 1;
+            /* pick_cnt==2: explicitly picked something other than the
+               preselected entry */
+            if (pick_cnt == 2 && attrnames[j].attr == default_attr)
+                j = picks[1].item.a_int - 1;
+            k = attrnames[j].attr;
+        }
         free((genericptr_t) picks);
-        return i;
+        return k;
+    } else if (pick_cnt == 0 && !allow_many) {
+        /* PICK_ONE, preselected entry explicitly chosen */
+        return default_attr;
     }
+    /* either ESC to explicitly cancel (pick_cnt==-1) or
+       PICK_ANY with preselected entry toggled off and nothing chosen */
     return -1;
 }
 
@@ -2114,6 +2205,35 @@ boolean tinitial, tfrom_file;
         return retval;
     }
 
+    fullname = "mouse_support";
+    if (match_optname(opts, fullname, 13, TRUE)) {
+        boolean compat = (strlen(opts) <= 13);
+
+        if (duplicate)
+            complain_about_duplicate(opts, 1);
+        op = string_for_opt(opts, (compat || !initial));
+        if (!op) {
+            if (compat || negated || initial) {
+                /* for backwards compatibility, "mouse_support" without a
+                   value is a synonym for mouse_support:1 */
+                iflags.wc_mouse_support = !negated;
+            }
+        } else if (negated) {
+            bad_negation(fullname, TRUE);
+            return FALSE;
+        } else {
+            int mode = atoi(op);
+
+            if (mode < 0 || mode > 2 || (mode == 0 && *op != '0')) {
+                config_error_add("Illegal %s parameter '%s'", fullname, op);
+                return FALSE;
+            } else { /* mode >= 0 */
+                iflags.wc_mouse_support = mode;
+            }
+        }
+        return retval;
+    }
+
     fullname = "number_pad";
     if (match_optname(opts, fullname, 10, TRUE)) {
         boolean compat = (strlen(opts) <= 10);
@@ -2168,8 +2288,9 @@ boolean tinitial, tfrom_file;
             symset[ROGUESET].name = dupstr(op);
             if (!read_sym_file(ROGUESET)) {
                 clear_symsetentry(ROGUESET, TRUE);
-                config_error_add("Unable to load symbol set \"%s\" from \"%s\"",
-                           op, SYMBOLS);
+                config_error_add(
+                               "Unable to load symbol set \"%s\" from \"%s\"",
+                                 op, SYMBOLS);
                 return FALSE;
             } else {
                 if (!initial && Is_rogue_level(&u.uz))
@@ -2651,9 +2772,8 @@ boolean tinitial, tfrom_file;
             bad_negation(fullname, FALSE);
             return FALSE;
         } else if ((op = string_for_opt(opts, negated)) != 0) {
-#ifdef WIN32
-            (void) strncpy(iflags.altkeyhandler, op, MAX_ALTKEYHANDLER - 5);
-            load_keyboard_handler();
+#if defined(WIN32) && defined(TTY_GRAPHICS)
+            set_altkeyhandler(op);
 #endif
         } else
             return FALSE;
@@ -3219,8 +3339,8 @@ boolean tinitial, tfrom_file;
 
     /* WINCAP
      *
-     *  map_mode:[tiles|ascii4x6|ascii6x8|ascii8x8|ascii16x8|ascii7x12|
-     *            ascii8x12|ascii16x12|ascii12x16|ascii10x18|fit_to_screen]
+     *  map_mode:[tiles|ascii4x6|ascii6x8|ascii8x8|ascii16x8|ascii7x12
+     *            |ascii8x12|ascii16x12|ascii12x16|ascii10x18|fit_to_screen]
      */
     fullname = "map_mode";
     if (match_optname(opts, fullname, sizeof("map_mode") - 1, TRUE)) {
@@ -3305,7 +3425,9 @@ boolean tinitial, tfrom_file;
             op = string_for_opt(opts, 0);
             if (!op)
                 return FALSE;
+#ifdef TTY_GRAPHICS
             map_subkeyvalue(op);
+#endif
 #endif
         }
         return retval;
@@ -3386,6 +3508,8 @@ boolean tinitial, tfrom_file;
      */
     fullname = "windowtype";
     if (match_optname(opts, fullname, 3, TRUE)) {
+        if (iflags.windowtype_locked)
+            return retval;
         if (duplicate)
             complain_about_duplicate(opts, 1);
         if (negated) {
@@ -3433,6 +3557,74 @@ boolean tinitial, tfrom_file;
             bad_negation(fullname, TRUE);
         return retval;
     }
+#ifdef CURSES_GRAPHICS
+    /* WINCAP2
+     * term_cols:amount */
+    fullname = "term_cols";
+    if (match_optname(opts, fullname, sizeof("term_cols")-1, TRUE)) {
+        op = string_for_opt(opts, negated);
+        iflags.wc2_term_cols = atoi(op);
+        if (negated)
+           bad_negation(fullname, FALSE);
+        return retval;
+    }
+
+    /* WINCAP2
+     * term_rows:amount */
+    fullname = "term_rows";
+    if (match_optname(opts, fullname, sizeof("term_rows")-1, TRUE)) {
+        op = string_for_opt(opts, negated);
+        iflags.wc2_term_rows = atoi(op);
+        if (negated)
+            bad_negation(fullname, FALSE);
+        return retval;
+    }
+
+    /* WINCAP2
+     * petattr:string */
+    fullname = "petattr";
+    if (match_optname(opts, fullname, sizeof("petattr")-1, TRUE)) {
+        op = string_for_opt(opts, negated);
+        if (op && !negated) {
+#ifdef CURSES_GRAPHICS
+            iflags.wc2_petattr = curses_read_attrs(op);
+            if (!curses_read_attrs(op))
+                config_error_add("Unknown %s parameter '%s'", fullname, opts);
+                return FALSE;
+#else
+            /* non-curses windowports will not use this flag anyway
+             * but the above will not compile if we don't have curses.
+             * Just set it to a sensible default: */
+            iflags.wc2_petattr = ATR_INVERSE
+#endif
+        } else if (negated) bad_negation(fullname, TRUE);
+        return retval;
+    }
+
+    /* WINCAP2
+     * windowborders:n */
+    fullname = "windowborders";
+    if (match_optname(opts, fullname, sizeof("windowborders")-1, TRUE)) {
+        op = string_for_opt(opts, negated);
+        if (negated && op)
+            bad_negation(fullname, TRUE);
+        else {
+            if (negated)
+                iflags.wc2_windowborders = 2; /* Off */
+            else if (!op)
+                iflags.wc2_windowborders = 1; /* On */
+            else    /* Value supplied */
+                iflags.wc2_windowborders = atoi(op);
+            if ((iflags.wc2_windowborders > 3)
+                 || (iflags.wc2_windowborders < 1)) {
+                    iflags.wc2_windowborders = 0;
+                    config_error_add(
+                        "Badoption - windowborders %s.", opts);
+            }
+        }
+        return retval;
+    }
+#endif
 
     /* menustyle:traditional or combination or full or partial */
     fullname = "menustyle";
@@ -3774,6 +3966,10 @@ boolean tinitial, tfrom_file;
 #ifdef STATUS_HILITES
             } else if (boolopt[i].addr == &iflags.wc2_hitpointbar) {
                 status_initialize(REASSESS_ONLY);
+                need_redraw = TRUE;
+#endif
+#ifdef CURSES_GRAPHICS
+            } else if ((boolopt[i].addr) == &iflags.cursesgraphics) {
                 need_redraw = TRUE;
 #endif
 #ifdef TEXTCOLOR
@@ -4871,6 +5067,7 @@ boolean setinitial, setfromfile;
             const char *sattr, *sclr;
             menu_item *pick_list = (menu_item *) 0;
             struct menucoloring *tmp = menu_colorings;
+            char clrbuf[QBUFSZ];
 
             tmpwin = create_nhwindow(NHW_MENU);
             start_menu(tmpwin);
@@ -4878,11 +5075,12 @@ boolean setinitial, setfromfile;
             mc_idx = 0;
             while (tmp) {
                 sattr = attr2attrname(tmp->attr);
-                sclr = clr2colorname(tmp->color);
+                sclr = strcpy(clrbuf, clr2colorname(tmp->color));
+                (void) strNsubst(clrbuf, " ", "-", 0);
                 any.a_int = ++mc_idx;
                 /* construct suffix */
                 Sprintf(buf, "\"\"=%s%s%s", sclr,
-                        (tmp->attr != ATR_NONE) ? " & " : "",
+                        (tmp->attr != ATR_NONE) ? "&" : "",
                         (tmp->attr != ATR_NONE) ? sattr : "");
                 /* now main string */
                 ln = sizeof buf - strlen(buf) - 1; /* length available */
@@ -5166,10 +5364,10 @@ get_compopt_value(optname, buf)
 const char *optname;
 char *buf;
 {
-    char ocl[MAXOCLASSES + 1];
     static const char none[] = "(none)", randomrole[] = "random",
-                      to_be_done[] = "(to be done)", defopt[] = "default",
-                      defbrief[] = "def";
+                      to_be_done[] = "(to be done)",
+                      defopt[] = "default", defbrief[] = "def";
+    char ocl[MAXOCLASSES + 1];
     int i;
 
     buf[0] = '\0';
@@ -5324,6 +5522,25 @@ char *buf;
 #endif
     } else if (!strcmp(optname, "name")) {
         Sprintf(buf, "%s", plname);
+    } else if (!strcmp(optname, "mouse_support")) {
+#ifdef WIN32
+#define MOUSEFIX1 ", QuickEdit off"
+#define MOUSEFIX2 ", QuickEdit unchanged"
+#else
+#define MOUSEFIX1 ", O/S adjusted"
+#define MOUSEFIX2 ", O/S unchanged"
+#endif
+        static const char *mousemodes[][2] = {
+            { "0=off", "" },
+            { "1=on",  MOUSEFIX1 },
+            { "2=on",  MOUSEFIX2 },
+        };
+#undef MOUSEFIX1
+#undef MOUSEFIX2
+        int ms = iflags.wc_mouse_support;
+
+        if (ms >= 0 && ms <= 2)
+            Sprintf(buf, "%s%s", mousemodes[ms][0], mousemodes[ms][1]);
     } else if (!strcmp(optname, "number_pad")) {
         static const char *numpadmodes[] = {
             "0=off", "1=on", "2=on, MSDOS compatible",
@@ -5436,6 +5653,18 @@ char *buf;
                 symset[PRIMARY].name ? symset[PRIMARY].name : "default");
         if (currentgraphics == PRIMARY && symset[PRIMARY].name)
             Strcat(buf, ", active");
+#ifdef CURSES_GRAPHICS
+    } else if (!strcmp(optname, "term_cols")) {
+        if (iflags.wc2_term_cols)
+            Sprintf(buf, "%d", iflags.wc2_term_cols);
+        else
+            Strcpy(buf, defopt);
+    } else if (!strcmp(optname, "term_rows")) {
+        if (iflags.wc2_term_rows)
+            Sprintf(buf, "%d",iflags.wc2_term_rows);
+        else
+            Strcpy(buf, defopt);
+#endif
     } else if (!strcmp(optname, "tile_file")) {
         Sprintf(buf, "%s",
                 iflags.wc_tile_file ? iflags.wc_tile_file : defopt);
@@ -5472,6 +5701,13 @@ char *buf;
                 ttycolors[CLR_YELLOW], ttycolors[CLR_BRIGHT_BLUE],
                 ttycolors[CLR_BRIGHT_MAGENTA], ttycolors[CLR_BRIGHT_CYAN]);
 #endif /* VIDEOSHADES */
+#ifdef CURSES_GRAPHICS
+    } else if (!strcmp(optname,"windowborders")) {
+        Sprintf(buf, "%s",
+                iflags.wc2_windowborders == 1 ? "1=on" :
+                iflags.wc2_windowborders == 2 ? "2=off" :
+                iflags.wc2_windowborders == 3 ? "3=auto" : defopt);
+#endif
     } else if (!strcmp(optname, "windowtype")) {
         Sprintf(buf, "%s", windowprocs.name);
     } else if (!strcmp(optname, "windowcolors")) {
@@ -6139,6 +6375,9 @@ static struct wc_Opt wc2_options[] = {
     { "status hilite rules", WC2_HILITE_STATUS },
     /* statushilites doesn't have its own bit */
     { "statushilites", WC2_HILITE_STATUS },
+#ifdef CURSES_GRAPHICS
+    {"windowborders", WC2_WINDOWBORDERS},
+#endif
     { (char *) 0, 0L }
 };
 

@@ -160,6 +160,7 @@ E NEARDATA struct sinfo {
 } program_state;
 
 E boolean restoring;
+E boolean ransacked;
 
 E const char quitchars[];
 E const char vowels[];
@@ -423,7 +424,11 @@ E struct plinemsg_type *plinemsg_types;
 E const char *ARGV0;
 #endif
 
-enum earlyarg {ARG_DEBUG, ARG_VERSION};
+enum earlyarg {ARG_DEBUG, ARG_VERSION
+#ifdef WIN32
+    ,ARG_WINDOWS
+#endif
+};
 
 struct early_opt {
     enum earlyarg e;

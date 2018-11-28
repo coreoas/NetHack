@@ -93,6 +93,7 @@ extern void FDECL(interject, (int));
  * Compiler-specific adjustments
  *===============================================
  */
+
 #ifdef _MSC_VER
 #if (_MSC_VER > 1000)
 /* Visual C 8 warning elimination */
@@ -203,7 +204,9 @@ extern void NDECL(win32_abort);
 extern void FDECL(nttty_preference_update, (const char *));
 extern void NDECL(toggle_mouse_support);
 extern void FDECL(map_subkeyvalue, (char *));
-extern void NDECL(load_keyboard_handler);
+#if defined(WIN32CON)
+extern void FDECL(set_altkeyhandler, (const char *));
+#endif
 extern void NDECL(raw_clear_screen);
 
 #include <fcntl.h>
@@ -225,7 +228,9 @@ open(const char _FAR *__path, int __access, ... /*unsigned mode*/);
 long _RTLENTRY _EXPFUNC lseek(int __handle, long __offset, int __fromwhere);
 int _RTLENTRY _EXPFUNC read(int __handle, void _FAR *__buf, unsigned __len);
 #endif
-#include <conio.h>
+#ifndef CURSES_GRAPHICS
+#include <conio.h>      /* conflicting definitions with curses.h */
+#endif
 #undef kbhit /* Use our special NT kbhit */
 #define kbhit (*nt_kbhit)
 
@@ -245,5 +250,17 @@ extern int FDECL(set_win32_option, (const char *, const char *));
 #ifdef CHANGE_COLOR
 extern int FDECL(alternative_palette, (char *));
 #endif
+
+#ifdef NDEBUG
+#define nhassert(expression) ((void)0)
+#else
+extern void FDECL(nhassert_failed, (const char * exp, const char * file,
+                                    int line));
+
+#define nhassert(expression) (void)((!!(expression)) || \
+        (nhassert_failed(#expression, __FILE__, __LINE__), 0))
+#endif
+
+#define nethack_enter(argc, argv) nethack_enter_winnt()
 
 #endif /* NTCONF_H */
