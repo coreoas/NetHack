@@ -3,14 +3,23 @@ extern "C" {
 }
 
 #include <QThread>
+#include <QDesktopWidget>
 #include "qt5_port.h"
 
+#define MW_WIDTH 700
+#define MW_HEIGHT 550
 
 void qt5_init_nhwindows(int* argc, char** argv)
 {
     NHApplication::instantiate(*argc, argv);
     NHMainWindow* mw = NHMainWindow::instance();
-    mw->resize(320, 240);
+    mw->resize(MW_WIDTH, MW_HEIGHT);
+
+    // center the mainwindow
+    int totalHeight = NHApplication::get_instance()->desktop()->height();
+    int totalWidth = NHApplication::get_instance()->desktop()->width();
+    mw->move((totalWidth - MW_WIDTH) / 2, (totalHeight - MW_HEIGHT) / 4);
+
     mw->show();
 
     // Flag that the window was inited
