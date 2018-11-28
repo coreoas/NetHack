@@ -117,6 +117,7 @@ endif	# WANT_WIN_X11
 ifdef WANT_WIN_QT
 CFLAGS += -DQT_GRAPHICS -DNOUSER_SOUNDS
 CFLAGS += -isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4
+CXXFLAGS += -I$(QTDIR)/include
 LINK=g++
 WINSRC += $(WINQTSRC)
 WINLIB += $(WINQTLIB) $(LIBXPM)
@@ -143,12 +144,18 @@ endif	# !WANT_WIN_QT
 
 ifdef WANT_WIN_QT5
 CFLAGS += -DQT5_GRAPHICS -DNOUSER_SOUNDS
-CXXFLAGS += -DQT5_GRAPHICS -DNOUSER_SOUNDS
+CXXFLAGS += -DQT5_GRAPHICS -DNOUSER_SOUNDS \
+            -I$(QT5DIR)/lib/QtWidgets.framework/Headers \
+            -I$(QT5DIR)/lib/QtGui.framework/Headers \
+            -I$(QT5DIR)/lib/QtCore.framework/Headers \
+            -F$(QT5DIR)/lib
 LINK = g++
 VARDATND = x11tiles rip.xpm nhsplash.xpm
 WINSRC += $(WINQT5SRC)
 WINLIB += $(WINQT5LIB)
 WINOBJ += $(WINQT5OBJ)
+LIBS += -lQtGui -lQtWidgets -lQtCore
+LFLAGS += -Wl,-rpath,$(QT5DIR)/lib
 endif # !WANT_WIN_QT5
 
 ifdef WANT_SHARE_INSTALL
@@ -240,7 +247,7 @@ PKGROOT_UG	= PKGROOT/$(PREFIX)
 PKGROOT_UGLN	= PKGROOT/$(HACKDIR)
 PKGROOT_BIN	= PKGROOT/$(SHELLDIR)
 build_tty_pkg:
-ifneq (,$(WANT_WIN_X11)$(WANT_WIN_QT))
+ifneq (,$(WANT_WIN_X11)$(WANT_WIN_QT)$(WANT_WIN_QT5))
 	-echo build_tty_pkg only works for a tty-only build
 	exit 1
 else
