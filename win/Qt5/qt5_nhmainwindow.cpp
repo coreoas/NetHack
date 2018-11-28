@@ -27,7 +27,6 @@ NHMainWindow::NHMainWindow() : QMainWindow() {
         return;
     }
 
-    iflags.window_inited = 1;
     QPixmap tilemap("x11tiles", "XPM");
     tile_size = tilemap.width() / 40;
 
@@ -54,8 +53,6 @@ NHMainWindow::NHMainWindow() : QMainWindow() {
 }
 
 NHMainWindow::~NHMainWindow() {
-    iflags.window_inited = 0;
-
     delete[] tiles;
 }
 
@@ -86,8 +83,8 @@ winid NHMainWindow::create_window(int type)
             return (winid) (QT5_TEXT_WINDOW | (text_windows.size() - 1));
         }
     }
-    printf("invalid window type\n");
-    return -1;
+
+    return WIN_ERR;
 }
 
 void NHMainWindow::clear_window(winid wid)
@@ -194,8 +191,6 @@ void NHMainWindow::init_menu(winid wid)
 {
     if (QT5_MENU_WINDOW & wid) {
         menu_windows[QT5_MENU_WINDOW ^ wid]->start();
-    } else {
-        printf("That's not gonna work :/\n");
     }
 }
 
@@ -203,8 +198,6 @@ void NHMainWindow::add_menu_entry(winid wid, int glyph, const ANY_P *identifier,
 {
     if (QT5_MENU_WINDOW & wid) {
         menu_windows[QT5_MENU_WINDOW ^ wid]->add(glyph, identifier, accelerator, groupacc, attr, str, preselected);
-    } else {
-        printf("That's not gonna work :/\n");
     }
 }
 
@@ -212,8 +205,6 @@ void NHMainWindow::flush_menu(winid wid, const char *prompt)
 {
     if (QT5_MENU_WINDOW & wid) {
         menu_windows[QT5_MENU_WINDOW ^ wid]->set_menu_prompt(prompt);
-    } else {
-        printf("That's not gonna work :/\n");
     }
 }
 

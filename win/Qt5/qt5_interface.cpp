@@ -12,6 +12,15 @@ void qt5_init_nhwindows(int* argc, char** argv)
     NHMainWindow* mw = NHMainWindow::instance();
     mw->resize(320, 240);
     mw->show();
+
+    // Flag that the window was inited
+    iflags.window_inited = 1;
+    // iflags.toptenwin is also forced to true, as it does not makes sense
+    // to show scores in stdout on a graphical application
+    iflags.toptenwin = 1;
+    set_option_mod_status("toptenwin", SET_IN_FILE);
+    set_option_mod_status("mouse_support", SET_IN_GAME);
+
     return;
 }
 
