@@ -279,6 +279,9 @@ struct window_procs Qt5_procs = {
     WC_ASCII_MAP|WC_TILED_MAP|
     WC_FONT_MAP|WC_TILE_FILE|WC_TILE_WIDTH|WC_TILE_HEIGHT|
     WC_PLAYER_SELECTION|WC_SPLASH_SCREEN,
+#if defined(SELECTSAVED)
+    WC2_SELECTSAVED |
+#endif
     0L,
     qt5_init_nhwindows,
     qt5_player_selection,

@@ -40,6 +40,8 @@ extern "C" {
 #include <QVBoxLayout>
 #include <QSplitter>
 #include <QCheckBox>
+#include <QLineEdit>
+#include <QComboBox>
 
 
 class NHApplication : public QApplication
@@ -190,6 +192,52 @@ public:
     NHStatusWindow(QWidget *parent);
     void enable_field(int fldindex, const char *fldname, const char *fieldfmt, BOOLEAN_P enable);
     void update_field(int fldindex, genericptr_t ptr, int chg, int percentage, int color, unsigned long *colormasks);
+};
+
+class NHNameDialog : public QDialog
+{
+    Q_OBJECT
+
+private:
+    QLineEdit *editor;
+    QPushButton *editor_accept;
+
+public slots:
+    void load_game();
+    void on_editor_changed();
+
+public:
+    NHNameDialog(QWidget *parent);
+    QString get_name();
+};
+
+class NHPlayerSelectionDialog : public QDialog
+{
+    Q_OBJECT
+
+private:
+    QCheckBox *role_randomness;
+    QComboBox *role_selector;
+    QCheckBox *race_randomness;
+    QComboBox *race_selector;
+    QCheckBox *gender_randomness;
+    QComboBox *gender_selector;
+    QCheckBox *align_randomness;
+    QComboBox *align_selector;
+    void check_accessible_races(short allowed_flags);
+    void check_accessible_genders(short allowed_flags);
+    void check_accessible_aligns(short allowed_flags);
+
+public slots:
+    void update_role(int newIndex);
+    void update_race(int newIndex);
+
+public:
+    NHPlayerSelectionDialog(QPixmap *tiles, QWidget *parent);
+    int get_role_index();
+    int get_race_index(int selected_role_idx);
+    int get_gender_index(int selected_role_idx, int selected_race_idx);
+    int get_align_index(int selected_role_idx, int selected_race_idx);
 };
 
 class NHMainWindow : public QMainWindow

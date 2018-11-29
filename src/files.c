@@ -169,8 +169,8 @@ extern char *sounddir;
 
 extern int n_dgns; /* from dungeon.c */
 
-#if defined(UNIX) && defined(QT_GRAPHICS)
-#define SELECTSAVED
+#if (defined(UNIX) && defined(QT_GRAPHICS)) || defined(QT5_GRAPHICS)
+#define SELECTSAVED 1
 #endif
 
 #ifdef SELECTSAVED

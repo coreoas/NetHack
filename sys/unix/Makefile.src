@@ -244,10 +244,12 @@ WINQT4OBJ = qt4bind.o qt4click.o qt4clust.o qt4delay.o qt4glyph.o qt4icon.o \
 WINQT5SRC = ../win/Qt5/qt5_interface.cpp ../win/Qt5/qt5_nhapplication.cpp \
 	../win/Qt5/qt5_nhmainwindow.cpp ../win/Qt5/qt5_nhmapwindow.cpp \
 	../win/Qt5/qt5_nhmenuwindow.cpp ../win/Qt5/qt5_nhmessagewindow.cpp \
-	../win/Qt5/qt5_nhtextwindow.cpp ../win/Qt5/qt5_nhstatuswindow.cpp
+	../win/Qt5/qt5_nhtextwindow.cpp ../win/Qt5/qt5_nhstatuswindow.cpp \
+	../win/Qt5/qt5_namedialog.cpp ../win/Qt5/qt5_playerselectiondialog.cpp
 WINQT5OBJ = qt5_port.moc.o qt5_interface.o qt5_nhapplication.o \
 	qt5_nhmainwindow.o qt5_nhmapwindow.o qt5_nhmenuwindow.o \
-	qt5_nhmessagewindow.o qt5_nhtextwindow.o qt5_nhstatuswindow.o tile.o
+	qt5_nhmessagewindow.o qt5_nhtextwindow.o qt5_nhstatuswindow.o \
+	qt5_namedialog.o qt5_playerselectiondialog.o tile.o
 #
 # Files for a Gnome port
 #
@@ -706,7 +708,7 @@ clean:
 spotless: clean
 	-rm -f a.out core $(GAME) Sys*
 	-rm -f ../include/date.h ../include/onames.h ../include/pm.h
-	-rm -f ../include/vis_tab.h vis_tab.c tile.c *.moc
+	-rm -f ../include/vis_tab.h vis_tab.c tile.c *.moc *.moc.cpp
 	-rm -f ../win/gnome/gn_rip.h
 
 
@@ -973,6 +975,12 @@ qt5_nhtextwindow.o: ../win/Qt5/qt5_nhtextwindow.cpp ../include/qt5_port.h \
 qt5_nhstatuswindow.o: ../win/Qt5/qt5_nhstatuswindow.cpp ../include/qt_xpms.h \
 	../include/qt5_icons.h ../include/qt5_port.h ../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) -c ../win/Qt5/qt5_nhstatuswindow.cpp
+qt5_namedialog.o: ../win/Qt5/qt5_namedialog.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) -c ../win/Qt5/qt5_namedialog.cpp
+qt5_playerselectiondialog.o: ../win/Qt5/qt5_playerselectiondialog.cpp ../include/qt5_port.h \
+	../include/qt5_icons.h qt5_port.moc.cpp
+	$(CXX) $(CXXFLAGS) -c ../win/Qt5/qt5_playerselectiondialog.cpp
 qt5_interface.o: ../win/Qt5/qt5_interface.cpp ../include/qt5_port.h \
 	../include/qt5_icons.h qt5_port.moc.cpp
 	$(CXX) $(CXXFLAGS) -c ../win/Qt5/qt5_interface.cpp

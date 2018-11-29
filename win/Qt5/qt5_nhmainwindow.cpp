@@ -221,11 +221,34 @@ int NHMainWindow::get_menu_selection(winid wid, int how, MENU_ITEM_P **selection
 void NHMainWindow::select_player()
 {
     ask_name();
+    NHPlayerSelectionDialog *player_selector = new NHPlayerSelectionDialog(tiles, this);
+    int res = player_selector->exec();
+    if (res == QDialog::Accepted) {
+        flags.initrole = player_selector->get_role_index();
+        std::strcpy(pl_character, roles[flags.initrole].name.m);
+        flags.initrace = player_selector->get_race_index(flags.initrole);
+        flags.female = flags.initgend = player_selector->get_gender_index(flags.initgend, flags.initrace);
+        flags.initalign = player_selector->get_align_index(flags.initgend, flags.initrace);
+        delete player_selector;
+    } else {
+        delete player_selector;
+        clearlocks();
+        nh_terminate(0);
+    }
 }
 
 void NHMainWindow::ask_name()
 {
-    std::strcpy(plname, "wizard");
+    NHNameDialog *name_dialog = new NHNameDialog(this);
+    int res = name_dialog->exec();
+    if (res == QDialog::Accepted) {
+        std::strcpy(plname, name_dialog->get_name().toUtf8().data());
+        delete name_dialog;
+    } else {
+        delete name_dialog;
+        clearlocks();
+        nh_terminate(0);
+    }
 }
 
 
